@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcularMateria, resumirSemestre, simularNota } from './calculo';
+import { analizarMateria, calcularMateria, resumirSemestre, simularNota } from './calculo';
 import { CONFIG, materiaDe } from './materia-de-prueba';
 
 describe('calcularMateria', () => {
@@ -122,6 +122,20 @@ describe('simularNota', () => {
       alcanzada: true,
     });
     expect(simularNota(materiaDe([3.5, 3, 4]), CONFIG, 4)).toMatchObject({ alcanzada: false });
+  });
+});
+
+describe('analizarMateria', () => {
+  it('con datos válidos entrega el resultado y ningún error', () => {
+    const { errores, resultado } = analizarMateria(materiaDe([3.5, 3, 4]), CONFIG);
+    expect(errores.cortes).toEqual({});
+    expect(resultado?.definitiva).toBe(3.55);
+  });
+
+  it('con datos inválidos no calcula nada y explica el error', () => {
+    const { errores, resultado } = analizarMateria(materiaDe([7, null, null]), CONFIG);
+    expect(resultado).toBeNull();
+    expect(errores.cortes['c1']?.nota).toMatch(/entre 0 y 5/);
   });
 });
 

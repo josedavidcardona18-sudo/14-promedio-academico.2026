@@ -71,6 +71,23 @@ describe('reducir', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it('no repite un id de corte aunque haya huecos en la numeración', () => {
+    const base = conMateria();
+    const conHueco: Estado = {
+      ...base,
+      materias: [
+        materiaDe([null, null], [50, 50], {
+          cortes: [
+            { id: 'c1', peso: 50, nota: null },
+            { id: 'c3', peso: 50, nota: null },
+          ],
+        }),
+      ],
+    };
+    const e = reducir(conHueco, { tipo: 'agregar-corte', materiaId: 'm1' });
+    expect(e.materias[0]?.cortes.map((c) => c.id)).toEqual(['c1', 'c3', 'c4']);
+  });
+
   it('quita el último corte, pero deja siempre al menos uno', () => {
     let e = reducir(conMateria(), { tipo: 'quitar-corte', materiaId: 'm1' });
     expect(e.materias[0]?.cortes).toHaveLength(2);
