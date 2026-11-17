@@ -13,7 +13,7 @@ export default defineConfig({
       provider: 'v8',
       // Lógica de negocio y todo lo que la usa. Las páginas de Next (src/app) se miden con Playwright.
       include: ['src/domain/**', 'src/storage/**', 'src/hooks/**', 'src/components/**'],
-      exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts'],
+      exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts', '**/*-de-prueba.ts', 'src/domain/tipos.ts'],
       reporter: ['text', 'html', 'json-summary'],
       // Bajar estos números rompe `npm run check`: es a propósito.
       thresholds: {
