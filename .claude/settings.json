@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "permissions": {
+    "defaultMode": "plan",
+    "blockReadsOutsideWorkingDirectories": true,
+    "disableBypassPermissionsMode": "disable",
+    "deny": [
+      "Read(**/.env*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*firebase-adminsdk*.json)",
+      "Edit(**/.env*)",
+      "Edit(./.claude/**)",
+      "Edit(./.husky/**)",
+      "Bash(sudo *)",
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(vercel env pull*)",
+      "Bash(cat .env*)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(git commit*)",
+      "Bash(npm install*)",
+      "Bash(npm i *)",
+      "Bash(npm add*)",
+      "Bash(npm uninstall*)",
+      "Bash(npm update*)",
+      "Bash(npx *)",
+      "Bash(vercel*)"
+    ],
+    "allow": [
+      "Bash(npm run check)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run lint*)",
+      "Bash(npm run format*)",
+      "Bash(npm run test*)",
+      "Bash(npm run build)",
+      "Bash(npm run e2e*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "denyRead": [
+        "~/",
+        "./.env",
+        "./.env.local",
+        "./.env.development",
+        "./.env.development.local",
+        "./.env.test.local",
+        "./.env.production",
+        "./.env.production.local",
+        "./.vercel"
+      ],
+      "allowRead": ["."]
+    },
+    "network": {
+      "allowedDomains": ["registry.npmjs.org"]
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Edit|Write|Glob|Grep|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+# dependencias y compilación
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# secretos: nunca al repositorio (el ejemplo público es env.example)
+.env*
+*.pem
+*.key
+*firebase-adminsdk*.json
+.vercel/
+
+# pruebas y reportes generados
+coverage/
+playwright-report/
+test-results/
+
+# configuración local de la IA y del sistema
+.claude/settings.local.json
+.DS_Store
+npm-debug.log*
