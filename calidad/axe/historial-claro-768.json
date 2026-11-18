@@ -1,0 +1,17 @@
+{
+  "pagina": "historial",
+  "tema": "claro",
+  "ancho": 768,
+  "version_de_axe": "4.14.1",
+  "violaciones": 0,
+  "reglas_aprobadas": 45,
+  "reglas_no_aplicables": 46,
+  "incompletos_a_revisar_a_mano": [
+    {
+      "regla": "color-contrast",
+      "ayuda": "Elements must meet minimum color contrast ratio thresholds",
+      "elementos": 1
+    }
+  ],
+  "detalle_de_violaciones": []
+}

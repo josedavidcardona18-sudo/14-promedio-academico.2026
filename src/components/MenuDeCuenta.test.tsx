@@ -54,8 +54,9 @@ describe('MenuDeCuenta', () => {
 
   it('sin sesión (401) no muestra nada', async () => {
     responderSiempre({ error: 'Necesitas iniciar sesión.' }, 401);
-    const { container } = render(<MenuDeCuenta />);
+    render(<MenuDeCuenta />);
     await waitFor(() => expect(fetch).toHaveBeenCalled());
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByText('Modo demostración')).not.toBeInTheDocument();
   });
 });

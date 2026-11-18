@@ -22,6 +22,10 @@
 | 11  | Esquemas Zod compartidos y cálculo con enteros                                           | `test(servicios)` (rojo, 3 archivos sin módulo) → `feat(servicios)` (37 verdes)                                      | Rojo por «módulo inexistente»; luego verde. Repasé a mano la aritmética de las pruebas antes de ejecutar                                                                  | Truncar a 2 decimales y decidir con enteros; la nota necesaria sube a la décima siguiente                                             |
 | 12  | API por capas con errores consistentes                                                   | `feat(api)`                                                                                                          | 200, 400, 404, 500 sin detalles internos e integración sobre el criterio 1. **Las pruebas se escribieron antes que el código, pero no ejecuté un paso rojo por separado** | El repositorio es una interfaz: en el Hito 3 se cambia por Firestore                                                                  |
 | 13  | Auditoría de calidad sobre la versión nueva                                              | `fix(csp)`, `CALIDAD.md`                                                                                             | Lighthouse 100/100/100/100 en 3 páginas; INP 24 ms; validador de W3C 0 errores; axe 0 violaciones en 27 combinaciones                                                     | No reclamar nada de Vercel: todo es en local                                                                                          |
+| 14  | Repositorio por usuario, API REST completa y Firestore                                   | `feat(repositories)`, `feat(api)`                                                                                    | 50 pruebas de rutas (200/201/204/400/401/403/404/409/429), aislamiento entre dos usuarios, adaptador de Firestore contra un doble                                         | El `uid` solo sale de la sesión; Firestore se prueba contra un doble, **no contra un proyecto real**                                  |
+| 15  | Sesión con Firebase Auth, cookie HttpOnly, roles, CSRF y `proxy.ts`                      | `feat(auth)`                                                                                                         | `crearSesion`, `requerirUsuario`, rutas de sesión y `proxy.ts` con el Admin SDK simulado                                                                                  | Quedó **sin probar con cuentas reales**: lo debe hacer quien sustenta                                                                 |
+| 16  | Interfaz de semestres y materias, `/historial`, comparación y guardado explícito         | `feat(ui)`                                                                                                           | 312 pruebas; las de pantalla usan los Route Handlers reales                                                                                                               | Se descartó el borrador por semestre y se dejó uno por materia                                                                        |
+| 17  | `openapi.yaml`, Bruno, reglas de Firestore y e2e de los Hitos 2 a 4                      | `feat: openapi…`                                                                                                     | Una prueba compara el contrato con las rutas; e2e en 3 anchos (291)                                                                                                       | La colección de Bruno **no se ejecutó** (necesita un token real)                                                                      |
 
 ## Casos en que se corrigió lo que produjo la IA (detectados por pruebas y herramientas)
 
@@ -72,6 +76,23 @@
     «Volver al resumen»). Eran de la prueba, no de la aplicación; se hicieron precisos.
 15. **La sesión se reinició a mitad de una suite.** Se comprobó el estado en disco, se relanzó en
     segundo plano con registro y se completó; no se dio nada por bueno sin ver el resultado.
+16. **Intenté ejecutar un paquete externo sin avisar.** Para validar `openapi.yaml` pedí a la
+    terminal `npx -y @redocly/cli`. El control de permisos lo denegó (descargar y correr código ajeno
+    contradice `AGENTS.md`). No insistí: validé el contrato con una prueba propia que compara el
+    YAML con las rutas del código y agregué `yaml`, que ya estaba en el árbol, como dependencia de
+    desarrollo, justificada en el README.
+17. **Una regresión de CLS que yo introduje.** Al añadir el menú de cuenta, el CLS pasó de 0 a
+    0,044–0,06: la cabecera crecía 52 px cuando llegaba la respuesta de `/api/auth/yo`. Lo encontré
+    midiendo cada salto de diseño con su elemento y sus rectángulos (no adivinando), reservé el
+    espacio del menú desde el principio y volví a medir: 0 en 360, 768 y 1024 px.
+18. **Una medición engañosa.** Dos veces vi «0 saltos de diseño» porque un servidor viejo seguía
+    ocupando el puerto y respondía con errores 503. Lo detecté porque la página no mostraba datos;
+    maté el proceso y repetí la medición.
+19. **Dos objetivos táctiles de 20–25 px.** La prueba de 44 px encontró el `<summary>` de «Agregar una
+    materia» y el enlace «Volver al resumen». Se corrigieron en el CSS, no en la prueba.
+20. **Una prueba que pasaba por casualidad.** Las consultas por etiqueta encontraban el formulario de
+    «Nuevo semestre» (cerrado pero presente) además del de edición; se acotaron a la tarjeta del
+    semestre en lugar de relajar la aserción.
 
 ## B. A completar por quien sustenta (≥ 3 casos propios)
 
@@ -97,11 +118,16 @@ probable):
    ahí? ¿Por qué `strictObject` (mass assignment) y qué es `jitless`?
 3. **`src/lib/http.ts`**: ¿qué hace `manejar()`? ¿Por qué un 500 no devuelve el mensaje del error y por
    qué los errores no se cachean?
-4. **`src/hooks/useSemestre.ts`**: ¿por qué «cargando» se deduce con una clave en vez de llamar a
+4. **`src/hooks/useSemestres.ts`**: ¿por qué las acciones refrescan la lista sin pasar por «cargando»? (y, antes, ¿por qué «cargando» se deduce con una clave en vez de llamar a
    `setState` dentro del efecto? ¿Para qué sirve el `AbortController`?
 5. **`src/hooks/useBorrador.ts`**: `useSyncExternalStore` y por qué hay un `getServerSnapshot`.
 6. **`src/components/CampoNumero.tsx`**: la Constraint Validation API (`validity.badInput`,
    `setCustomValidity`) y el patrón de «ajustar el estado cuando cambia una propiedad».
-7. **`src/components/ConSemestre.tsx`** y **`EditorMateria.tsx`**: contenedor frente a presentación, y
+7. **`src/components/ConSemestres.tsx`**, **`ConSemestreActivo.tsx`** y **`EditorMateria.tsx`**: contenedor frente a presentación, y
    estado derivado con `useMemo`.
 8. **`.claude/hooks/guard.mjs`**: por qué sale con código 2 y qué falsos positivos tiene.
+9. **`src/lib/auth.ts` y `src/lib/sesion.ts`**: ¿por qué la cookie y no el `idToken` en `localStorage`?
+   ¿Qué hace `verifySessionCookie(…, true)`? ¿Por qué `proxy.ts` **no** es la seguridad real?
+10. **`src/repositories/semestres.ts`**: ¿por qué todo cuelga de `usuarios/{uid}` y por qué un semestre
+    ajeno responde 404 y no 403?
+11. **`src/lib/http.ts` (`verificarOrigen`)**: ¿cómo evita un CSRF y por qué se acepta `Bearer` sin `Origin`?

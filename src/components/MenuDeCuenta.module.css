@@ -1,3 +1,19 @@
+.espacio {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
+
+/* A partir de tableta cabe junto a la navegación: se le reserva también el ancho. */
+@media (min-width: 48rem) {
+  .espacio {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    min-inline-size: 12rem;
+  }
+}
+
 .cuenta {
   display: flex;
   flex-wrap: wrap;

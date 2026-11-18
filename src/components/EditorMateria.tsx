@@ -31,7 +31,7 @@ type Edicion = ReturnType<typeof useEdicionMateria>;
 function PieDelEditor({ edicion }: { edicion: Edicion }) {
   return (
     <>
-      <p className={ui.ayuda} role="status">
+      <p className={`${ui.ayuda} ${estilos.estado}`} role="status">
         {ESTADOS[edicion.guardado]}
       </p>
       <p role="alert" className={ui.error}>

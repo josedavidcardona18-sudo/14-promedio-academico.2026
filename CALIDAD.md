@@ -15,21 +15,22 @@ responsive, accesibilidad, HTML semántico y retos de excelencia. Todo está en
 > formularios de semestres y materias y el guardado explícito: esas pantallas están cubiertas por las
 > pruebas automáticas de navegador (axe, tamaño de objetivos y texto, desbordes, consola y CSP, en 3
 > anchos y 4 temas), pero **Lighthouse, el validador W3C y las métricas de campo hay que repetirlos**
-> antes de entregar (comandos al final).
+> antes de entregar (comandos al final). **Sí se repitieron** con las pantallas nuevas: INP, CLS, LCP
+> de campo (`calidad/vitales.json`) y los informes de axe.
 
 ## Resumen de cumplimiento
 
-| Requisito                                                                    | Resultado                                                                                                                                              | Estado               |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
-| LCP ≤ 2,5 s · INP ≤ 200 ms · CLS ≤ 0,1                                       | LCP 0,93 s (móvil, simulado) · INP **24 ms** · CLS 0                                                                                                   | ✅                   |
-| Lighthouse móvil: Rend. ≥ 90 · Acces. ≥ 95 · BP ≥ 95 · SEO ≥ 95              | **100 · 100 · 100 · 100** en las 3 páginas, móvil y escritorio                                                                                         | ✅ (local)           |
-| Presupuesto: JS ≤ 200 kB y página ≤ 1 MB                                     | JS **184,4–188,5 kB** · página **≤ 212 kB** transferidos                                                                                               | ✅ (con poco margen) |
-| Responsive 360 · 768 · 1024 sin scroll horizontal                            | Playwright en los 3 anchos, también a 320 px y con zoom al 200 % (emulado)                                                                             | ✅                   |
-| Objetivos táctiles ≥ 44 × 44 px · texto ≥ 16 px                              | Comprobado por prueba automática sobre botones, campos, enlaces y todo el texto                                                                        | ✅                   |
-| Accesibilidad WCAG 2.2 AA                                                    | axe: **0 violaciones** en 27 combinaciones (3 páginas × 3 temas × 3 anchos) y en las pruebas de navegador (4 temas × 3 anchos × 8 pantallas y estados) | ✅ automático        |
-| Revisión manual (teclado real, zoom real, lector de pantalla, teléfono real) | Ver la lista de abajo                                                                                                                                  | ☐ **pendiente**      |
-| HTML válido (validador W3C)                                                  | **0 errores y 0 avisos** en 6 documentos (HTML del servidor y DOM hidratado)                                                                           | ✅                   |
-| Retos de excelencia (≥ 3)                                                    | 5 elegidos con evidencia                                                                                                                               | ✅                   |
+| Requisito                                                                    | Resultado                                                                                                                                                                                                                                    | Estado               |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| LCP ≤ 2,5 s · INP ≤ 200 ms · CLS ≤ 0,1                                       | LCP 0,93 s (Lighthouse móvil, **del Hito 1**) · INP **32 ms** · CLS **0** (medidos otra vez con las pantallas nuevas)                                                                                                                        | ✅                   |
+| Lighthouse móvil: Rend. ≥ 90 · Acces. ≥ 95 · BP ≥ 95 · SEO ≥ 95              | **100 · 100 · 100 · 100** en las 3 páginas, móvil y escritorio                                                                                                                                                                               | ✅ (local)           |
+| Presupuesto: JS ≤ 200 kB y página ≤ 1 MB                                     | JS **184,4–188,5 kB** · página **≤ 212 kB** transferidos                                                                                                                                                                                     | ✅ (con poco margen) |
+| Responsive 360 · 768 · 1024 sin scroll horizontal                            | Playwright en los 3 anchos, también a 320 px y con zoom al 200 % (emulado)                                                                                                                                                                   | ✅                   |
+| Objetivos táctiles ≥ 44 × 44 px · texto ≥ 16 px                              | Comprobado por prueba automática sobre botones, campos, enlaces y todo el texto                                                                                                                                                              | ✅                   |
+| Accesibilidad WCAG 2.2 AA                                                    | axe: **0 violaciones** en 36 informes completos (4 pantallas × 3 temas × 3 anchos, `calidad/axe/`) y en las pruebas de navegador (4 temas × 3 anchos × 6 rutas y 6 estados: error, vacío, sesión vencida, validación, diálogo y formularios) | ✅ automático        |
+| Revisión manual (teclado real, zoom real, lector de pantalla, teléfono real) | Ver la lista de abajo                                                                                                                                                                                                                        | ☐ **pendiente**      |
+| HTML válido (validador W3C)                                                  | **0 errores y 0 avisos** en 6 documentos (HTML del servidor y DOM hidratado)                                                                                                                                                                 | ✅                   |
+| Retos de excelencia (≥ 3)                                                    | 5 elegidos con evidencia                                                                                                                                                                                                                     | ✅                   |
 
 ## 1 · Rendimiento y Core Web Vitals
 
@@ -61,8 +62,8 @@ Lighthouse **no mide INP** en laboratorio. Se midió en un navegador real recorr
 
 | Métrica |                                       Resultado |   Límite |
 | ------- | ----------------------------------------------: | -------: |
-| LCP     |                                          644 ms | 2 500 ms |
-| INP     | **24 ms** (29 interacciones; el INP es la peor) |   200 ms |
+| LCP     |                                           92 ms | 2 500 ms |
+| INP     | **32 ms** (31 interacciones; el INP es la peor) |   200 ms |
 | CLS     |                                               0 |      0,1 |
 
 Datos: [`calidad/vitales.json`](calidad/vitales.json). Una sola corrida en local, sin red
@@ -75,7 +76,7 @@ estrangulada: no sustituye a datos reales de usuarios (percentil 75).
 | **Buenas prácticas**       | Chrome registraba una `kEvalViolation` en su panel de problemas: Zod 4 prueba `new Function('')` para compilar esquemas y, aunque capture el error, el CSP de producción (sin `unsafe-eval`) lo anota. Se configuró `z.config({ jitless: true })`. |                96 en las 3 páginas |        **100** |
 | **JavaScript transferido** | Empeoró: el documento exige Zod en el cliente. Sigue dentro del presupuesto, con poco margen.                                                                                                                                                      | 151,1 kB (versión de una pantalla) | 184,4–188,5 kB |
 | CLS                        | Sin cambios: ya se había corregido reservando la altura del primer pantallazo (commit `ff0d602`, 0,057 → 0) y el diseño actual lo mantiene.                                                                                                        |                                  0 |              0 |
-| LCP / INP                  | Ya cumplían en la primera medición: no hay «antes» que comparar.                                                                                                                                                                                   |                                  — | 644 ms / 24 ms |
+| LCP / INP                  | Ya cumplían en la primera medición: no hay «antes» que comparar.                                                                                                                                                                                   |                                  — |  92 ms / 32 ms |
 
 El «antes» de buenas prácticas se reproduce haciendo `git checkout e678772` y midiendo; el informe de
 esa corrida no se guardó como archivo. La prueba que lo cubre desde entonces es
