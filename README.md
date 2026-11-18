@@ -13,7 +13,7 @@ con **Firebase Auth** y una **cookie de sesión**.
 
 No hay que usar un editor concreto: son comandos de terminal desde la **carpeta raíz del proyecto**
 (donde está `package.json`). Sirve la terminal integrada de **Visual Studio Code**
-(`File → Open Folder` y `` Ctrl+` ``). Requiere Node 20.9 o superior.
+(`File → Open Folder` y `` Ctrl+` ``). Requiere Node 22.12 o superior.
 
 ```bash
 npm ci

@@ -4,7 +4,7 @@
   "private": true,
   "description": "Calculadora de promedio académico: materias, notas por corte y simulador de nota necesaria.",
   "engines": {
-    "node": ">=20.9"
+    "node": ">=22.12"
   },
   "scripts": {
     "dev": "next dev",
