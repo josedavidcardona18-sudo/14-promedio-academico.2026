@@ -1,0 +1,22 @@
+/* El pie de página queda siempre bajo el primer pantallazo: así no se mueve cuando, tras cargar los
+   datos, aparece el contenido (evita el salto de diseño, CLS). */
+.pagina {
+  min-block-size: 100dvh;
+}
+
+.cabecera {
+  display: grid;
+  gap: 0.5rem;
+  margin-block-end: 1.5rem;
+}
+
+.intro {
+  color: var(--suave);
+  font-size: 1.0625rem;
+}
+
+.volver {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+}

@@ -11,9 +11,24 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      // Lógica de negocio y todo lo que la usa. Las páginas de Next (src/app) se miden con Playwright.
-      include: ['src/domain/**', 'src/storage/**', 'src/hooks/**', 'src/components/**'],
-      exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts', '**/*-de-prueba.ts', 'src/domain/tipos.ts'],
+      // Lógica de negocio, API y todo lo que la usa. Las páginas de Next (src/app/**/page.tsx) se
+      // miden con Playwright.
+      include: [
+        'src/schemas/**',
+        'src/services/**',
+        'src/repositories/**',
+        'src/lib/**',
+        'src/storage/**',
+        'src/hooks/**',
+        'src/components/**',
+        'src/app/api/**',
+      ],
+      exclude: [
+        '**/*.test.{ts,tsx}',
+        '**/*.d.ts',
+        '**/pruebas-de-datos.ts',
+        'src/repositories/index.ts',
+      ],
       reporter: ['text', 'html', 'json-summary'],
       // Bajar estos números rompe `npm run check`: es a propósito.
       thresholds: {
@@ -21,7 +36,8 @@ export default defineConfig({
         functions: 80,
         branches: 80,
         statements: 80,
-        'src/domain/**': { lines: 90, functions: 90, branches: 85, statements: 90 },
+        'src/schemas/**': { lines: 90, functions: 90, branches: 85, statements: 90 },
+        'src/services/**': { lines: 90, functions: 90, branches: 85, statements: 90 },
       },
     },
   },

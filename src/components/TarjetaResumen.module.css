@@ -1,0 +1,35 @@
+.tarjeta {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  min-inline-size: 0;
+}
+
+.cabecera {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+}
+
+.promedio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.promedio strong {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.enlace {
+  text-decoration: none;
+}
+
+@media print {
+  .tarjeta {
+    break-inside: avoid;
+  }
+}

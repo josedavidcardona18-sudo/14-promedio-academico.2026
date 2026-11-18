@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation';
 import estilos from './NavegacionPrincipal.module.css';
 
 const ENLACES = [
-  { href: '/', texto: 'Calculadora' },
-  { href: '/acerca', texto: 'Cómo se calcula' },
+  { href: '/', texto: 'Resumen' },
+  { href: '/simulador', texto: 'Simulador' },
 ] as const;
 
 export function NavegacionPrincipal() {

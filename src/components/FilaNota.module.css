@@ -1,0 +1,26 @@
+.fila {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.625rem;
+  background: var(--superficie-2);
+}
+
+.leyenda {
+  padding-inline: 0.25rem;
+  font-weight: 700;
+}
+
+.nombre,
+.quitar {
+  grid-column: 1 / -1;
+}
+
+.quitar {
+  justify-self: start;
+}
