@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SEMESTRE_DE_EJEMPLO } from '@/repositories/semestres';
+import { SEMESTRE_DE_EJEMPLO } from '@/repositories/ejemplo';
 import { ErrorDeApi, pedirSemestre } from './api-cliente';
 
 const responder = (cuerpo: unknown, estado = 200) =>

@@ -5,16 +5,23 @@ export interface DetalleError {
   mensaje: string;
 }
 
-/** Un error que la API sabe explicar: lleva su código HTTP y, si hace falta, el detalle por campo. */
+/** Un error que la API sabe explicar: lleva su código HTTP y, si hace falta, detalle y cabeceras. */
 export class ErrorHttp extends Error {
   readonly status: number;
   readonly detalles: DetalleError[] | undefined;
+  readonly cabeceras: Record<string, string> | undefined;
 
-  constructor(status: number, mensaje: string, detalles?: DetalleError[]) {
+  constructor(
+    status: number,
+    mensaje: string,
+    detalles?: DetalleError[],
+    cabeceras?: Record<string, string>,
+  ) {
     super(mensaje);
     this.name = 'ErrorHttp';
     this.status = status;
     this.detalles = detalles;
+    this.cabeceras = cabeceras;
   }
 }
 
