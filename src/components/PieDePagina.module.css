@@ -2,7 +2,7 @@
   border-block-start: 1px solid var(--borde);
   background: var(--superficie);
   color: var(--suave);
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .interior {

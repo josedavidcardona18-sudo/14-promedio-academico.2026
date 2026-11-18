@@ -26,6 +26,6 @@
   border-radius: 0.5rem;
   background: var(--superficie-2);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   overflow-wrap: anywhere;
 }

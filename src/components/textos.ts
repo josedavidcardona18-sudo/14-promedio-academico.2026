@@ -12,7 +12,7 @@ export interface Mensaje {
 /** El icono acompaña al texto: el estado nunca se comunica solo con color. */
 export const ESTADOS: Record<EstadoMateria, { texto: string; icono: string; tono: Tono }> = {
   'sin-notas': { texto: 'Sin notas', icono: '○', tono: 'neutro' },
-  'en-curso': { texto: 'En curso', icono: '◔', tono: 'info' },
+  'en-curso': { texto: 'En curso', icono: '…', tono: 'info' },
   asegurada: { texto: 'Aprobación asegurada', icono: '✓', tono: 'exito' },
   'sin-salida': { texto: 'Ya no alcanza para aprobar', icono: '!', tono: 'peligro' },
   aprobada: { texto: 'Aprobada', icono: '✓', tono: 'exito' },
