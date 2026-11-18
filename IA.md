@@ -6,7 +6,7 @@ las hace cumplir el programa. El historial lo comprueba: el primer commit contie
 
 | Qué                                | Dónde                                                                                                                                                |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Reglas del proyecto para la IA     | [`AGENTS.md`](AGENTS.md) (60 líneas) y [`CLAUDE.md`](CLAUDE.md) (solo `@AGENTS.md`)                                                                  |
+| Reglas del proyecto para la IA     | [`AGENTS.md`](AGENTS.md) (67 líneas) y [`CLAUDE.md`](CLAUDE.md) (solo `@AGENTS.md`)                                                                  |
 | Permisos, sandbox y hook           | [`.claude/settings.json`](.claude/settings.json)                                                                                                     |
 | Hook `PreToolUse` propio + pruebas | [`.claude/hooks/guard.mjs`](.claude/hooks/guard.mjs) · [`guard.test.mjs`](.claude/hooks/guard.test.mjs)                                              |
 | Subagente revisor y comando        | [`.claude/agents/revisor.md`](.claude/agents/revisor.md) · [`.claude/commands/revisar.md`](.claude/commands/revisar.md)                              |

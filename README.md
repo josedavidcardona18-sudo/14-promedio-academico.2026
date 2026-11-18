@@ -1,101 +1,141 @@
-# Calculadora de promedio académico
+# 14 · Calculadora de promedio académico
 
-Registra tus materias y las notas de cada corte, calcula tu promedio del semestre y responde la
-pregunta que todos se hacen: **«¿qué nota necesito para aprobar?»**. Sin cuenta y sin servidor: los
-datos se guardan solo en tu navegador.
+Registra materias y notas por corte, calcula el promedio y simula **«¿qué nota necesito para
+aprobar?»**. Un solo proyecto Next.js (App Router, React 19, TypeScript) con la interfaz y la API.
 
-- **Resumen del semestre**: promedio ponderado por créditos con las notas registradas.
-- **Materias con cortes**: cada corte tiene un porcentaje y una nota; los porcentajes deben sumar 100 %.
-- **Simulador**: la nota que necesitas en lo que falta, para aprobar o para una meta propia.
-- **Escala configurable**: por defecto 0–5 y se aprueba con 3,0.
-- Accesible (WCAG 2.2 AA), responsive (360 · 768 · 1024 px), modo oscuro, alto contraste e impresión.
-
-Cómo se calcula cada cosa, con un ejemplo, está en la página `/acerca`.
+> **Estado: Hito 1** (semana 4) del documento del proyecto. Hoy usa un **semestre de ejemplo**
+> detrás de una API y un repositorio; Firestore (Hito 3) y Firebase Auth (Hito 4) son lo siguiente.
+> La tabla de cumplimiento está más abajo, con lo que falta dicho sin rodeos.
 
 ## Cómo correrlo
 
-Requiere Node 20.9 o superior (se desarrolló con Node 22).
+No hay que usar un editor concreto: son comandos de terminal desde la **carpeta raíz del proyecto**
+(donde está `package.json`). Sirve la terminal integrada de **Visual Studio Code**
+(`File → Open Folder` y `` Ctrl+` ``). Requiere Node 20.9 o superior.
 
 ```bash
 npm ci
 npm run dev        # http://localhost:3000
 ```
 
-Opcional: `cp env.example .env.local` para definir `NEXT_PUBLIC_SITE_URL` (solo afecta a los
-metadatos, el sitemap y la imagen para redes sociales).
+- **Windows:** la configuración de IA usa un sandbox que no existe en Windows nativo. Trabaje en
+  **WSL2**: en VS Code, extensión «WSL» → `Open Folder in WSL` y use esa terminal. Abra Claude Code
+  siempre en la raíz del repositorio.
+- Para las pruebas de navegador, una sola vez: `npx playwright install chromium`.
+- Opcional: `cp env.example .env.local` (solo define `NEXT_PUBLIC_SITE_URL`). **Nunca** suba `.env.local`.
+
+## Rutas y API
+
+| Ruta             | Qué muestra                                                                       |
+| ---------------- | --------------------------------------------------------------------------------- |
+| `/`              | Resumen del semestre: promedio ponderado por créditos y estado de cada materia    |
+| `/materias/[id]` | Notas y porcentajes de una materia; el resultado se actualiza mientras se escribe |
+| `/simulador`     | ¿Qué nota necesito? Para una materia y una meta de 3,0 a 5,0                      |
+
+| API                                     | Respuesta                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------- |
+| `GET /api/semestres/:id`                | `200` semestre con sus materias · `404` · `400` identificador inválido          |
+| `GET /api/semestres/:id/resumen?meta=4` | Promedios calculados en el servidor con enteros · `400` si la meta no es válida |
+
+Error siempre `{ "error": "…", "detalles"?: [{ "campo": "…", "mensaje": "…" }] }`. Un `500` nunca
+revela mensajes internos. Las lecturas correctas son cacheables; los errores, nunca.
 
 ## Scripts
 
-| Comando          | Qué hace                                                                                             |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `npm run check`  | `typecheck` + `lint` + `format:check` + `test`. **Si no pasa, no está terminado.**                   |
-| `npm test`       | Vitest con cobertura (umbral 80 %; 90 % en `domain`) y las pruebas `node:test` del hook y de commits |
-| `npm run e2e`    | Playwright en 360, 768 y 1024 px con axe (compila y levanta la app en el puerto 3100)                |
-| `npm run build`  | Compilación de producción                                                                            |
-| `npm run format` | Prettier                                                                                             |
-
-Para Playwright en una máquina nueva: `npx playwright install chromium`.
+| Comando         | Qué hace                                                                              |
+| --------------- | ------------------------------------------------------------------------------------- |
+| `npm run check` | `typecheck` + `lint` + `format:check` + `test`. **Si no pasa, no está terminado.**    |
+| `npm test`      | Vitest con cobertura (80 %; 90 % en `schemas` y `services`) y `node:test` del hook    |
+| `npm run e2e`   | Playwright en 360, 768 y 1024 px con axe (compila y levanta la app en el puerto 3100) |
+| `npm run build` | Compilación de producción                                                             |
 
 ## Estructura y capas
 
 ```text
-src/domain/      lógica pura (tipos, cálculo, validación, reducer). Sin React, DOM ni localStorage
-src/storage/     único módulo que toca localStorage; valida lo que lee
-src/hooks/       useAlmacen (useSyncExternalStore) y useHidratado
-src/components/  interfaz (CSS Modules); sin reglas de negocio
-src/app/         rutas, metadatos, sitemap, robots, imagen social
-e2e/             Playwright + axe
-calidad/         evidencias de calidad (ver CALIDAD.md)
-ia/ · .claude/   configuración y evidencias de IA (ver IA.md)
+src/schemas/       esquemas Zod compartidos por el formulario y la API (las reglas, una sola vez)
+src/services/      reglas de negocio puras: cálculo con enteros, estados, simulador
+src/repositories/  único acceso a los datos (hoy ejemplo; Hito 3: Firestore con el Admin SDK)
+src/lib/           errores, manejar() de la API, cliente de la API, formato
+src/app/api/       Route Handlers: HTTP y validación → servicio → repositorio
+src/storage/       único módulo que toca localStorage (borrador)
+src/hooks/         useSemestre (fetch), useBorrador, useSemestreActual
+src/components/    interfaz (CSS Modules); contenedores de datos y componentes de presentación
+src/app/           páginas, loading, error, not-found, metadatos, sitemap
+e2e/               Playwright + axe · calidad/ evidencias · ia/ y .claude/ configuración de IA
 ```
-
-Dependencias permitidas: `app → components → hooks → storage → domain`, nunca al revés.
 
 ## Decisiones de diseño
 
-- **Una nota por corte.** Es lo que pide el proyecto y mantiene la aplicación sencilla.
-- **La definitiva se aproxima a 2 decimales** (mitad hacia arriba) antes de compararla con la mínima:
-  así lo que se ve es lo que se decide. Si su institución no aproxima, la nota necesaria ya es
-  conservadora (se redondea hacia arriba), pero la definitiva podría diferir por unos centésimos.
-- **`localStorage` y nada más.** No hay backend: menos superficie de ataque y cero secretos. Lo que se
-  lee del navegador se valida con guardas de tipo; si está corrupto se empieza vacío en vez de romper.
-- **`useSyncExternalStore`** en vez de `useEffect` + `setState`: el HTML del servidor no depende del
-  navegador, no hay parpadeo y se sincroniza entre pestañas.
-- **Sin fuentes web.** Se usa la pila de fuentes del sistema: 0 bytes y cero cambio de diseño al cargar.
-- **`<dialog>` nativo** para confirmar acciones destructivas (foco, `Esc` y fondo inerte sin código extra).
-- **Estados con icono y texto**, nunca solo color.
+- **Aritmética en enteros.** Notas en décimas y porcentajes en décimas de punto: `3,3 × 30 % + 2,7 × 30 %`
+  nunca pasa por coma flotante. Los resultados se **truncan** a 2 decimales (2,996 se ve «2,99», no
+  «3,00»), así lo que se ve coincide con lo que se decide.
+- **La nota necesaria sube a la décima siguiente** (una nota válida, con un decimal) y es la más baja
+  que de verdad alcanza. Si pasa de 5,0, la meta se avisa como «ya no es alcanzable».
+- **Estados:** _aprobando_ (lo evaluado promedia 3,0 o más), _en riesgo_ (menos de 3,0 pero aún se
+  puede aprobar) y _perdida_ (ni con 5,0 en lo que falta). Un icono y un texto acompañan al color.
+- **Los porcentajes no pasan de 100 %.** Lo que falta hasta 100 % es lo pendiente; no hace falta
+  registrar una nota para cada corte.
+- **Borrador en `localStorage` mientras no hay sesión.** Lo que se lee se valida con el mismo esquema
+  Zod; si está corrupto se ignora. Cuando haya Firestore, el borrador servirá solo sin sesión.
+- **Estado derivado:** los promedios se calculan con `useMemo`, no se guardan.
+- **Zod en modo `jitless`:** el CSP de producción no permite `unsafe-eval` y Zod, por defecto, prueba
+  `new Function` (Chrome lo registraba como violación de CSP).
+- **Sin fuentes web** (pila del sistema) y **`<dialog>`/`<details>` nativos**.
+- **Los números se escriben con punto** en `<input type="number">` en navegadores en inglés y con
+  coma en los de español: el valor que llega a la aplicación es siempre el mismo.
+
+## Cumplimiento del documento del proyecto
+
+| Sección                                                                     | Estado                                                                                                                      |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| RF-02 promedio ponderado · RF-03 simulador · RF-04 estados                  | ✅                                                                                                                          |
+| RF-06 imprimir el resumen                                                   | ✅ `window.print()` con alternativa                                                                                         |
+| RF-01 CRUD de semestres, materias y notas                                   | 🟡 solo se editan las notas de las materias; crear/borrar semestres y materias es del Hito 2                                |
+| RF-05 comparar semestres · ruta `/historial`                                | ❌ Hito 2                                                                                                                   |
+| Criterios de aceptación 1 a 4                                               | ✅ pruebas unitarias, de componentes, de API y de navegador                                                                 |
+| Validación (nota 0,0–5,0 con un decimal, porcentajes ≤ 100 %, meta 3,0–5,0) | ✅ esquemas Zod compartidos, modo estricto                                                                                  |
+| Estados de interfaz: carga, vacío, error y reintento                        | ✅ con `aria-live`                                                                                                          |
+| APIs del navegador (≥ 2)                                                    | ✅ Constraint Validation API, `localStorage`, `window.print()`                                                              |
+| React/Next (≥ 3 técnicas)                                                   | ✅ estado derivado con `useMemo`, formularios controlados con validación cruzada, contenedores y presentación               |
+| Pruebas: lógica (6 casos), RTL, API (400/404), integración                  | ✅ · **falta** `401` (llega con la autenticación) y «guardar una nota de 5,5 → 400» (necesita la ruta de escritura, Hito 3) |
+| Firestore, Auth con cookie de sesión, roles, `proxy.ts`                     | ❌ Hitos 3 y 4                                                                                                              |
+| `openapi.yaml` y colección Bruno/Postman                                    | ❌ Hito 3                                                                                                                   |
+| Despliegue en Vercel y URL pública                                          | ❌ Hito 4                                                                                                                   |
+| Seguridad: cabeceras, CSP, errores sin detalles, `npm audit`                | ✅ (ver `CALIDAD.md`); rate limiting, CSRF por `Origin` y cookie de sesión son de los Hitos 3 y 4                           |
+| Metas de calidad (sección 14) y configuración de IA (sección 15)            | ✅ con evidencias en `CALIDAD.md` e `IA.md`; faltan las comprobaciones que solo una persona puede hacer                     |
+
+El documento muestra una carpeta `tests/`; aquí cada prueba vive junto a lo que prueba
+(`*.test.ts(x)`), y las de navegador en `e2e/`.
 
 ## Dependencias (cada una justificada)
 
 **Producción**
 
-| Paquete              | Por qué                                     |
-| -------------------- | ------------------------------------------- |
-| `next`               | Framework (App Router, SEO, build estático) |
-| `react`, `react-dom` | Interfaz                                    |
+| Paquete                      | Por qué                                                                                |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `next`, `react`, `react-dom` | Framework, rutas, Route Handlers e interfaz                                            |
+| `zod`                        | Esquemas de validación compartidos por el cliente y el servidor (lo pide el documento) |
 
 **Desarrollo**
 
-| Paquete                                                                  | Por qué                                                                                                             |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `typescript`, `@types/node`, `@types/react`, `@types/react-dom`          | Tipado estricto. Se fijó TypeScript 5.9 porque `typescript-eslint` aún no admite TS 7                               |
-| `eslint` (9), `eslint-config-next`, `eslint-config-prettier`             | Lint con las reglas de la hoja (complejidad, tamaño de función, `jsx-a11y`). ESLint 9 por compatibilidad de plugins |
-| `prettier`                                                               | Formato único                                                                                                       |
-| `vitest`, `@vitest/coverage-v8`, `vite`, `@vitejs/plugin-react`, `jsdom` | Pruebas unitarias y de componentes con umbral de cobertura (`vite` explícito porque el plugin lo exige)             |
-| `@testing-library/react`, `/dom`, `/user-event`, `/jest-dom`             | Probar como lo usa una persona                                                                                      |
-| `axe-core`                                                               | Accesibilidad dentro de Vitest                                                                                      |
-| `@playwright/test`, `@axe-core/playwright`                               | Pruebas en navegador real a 3 anchos, con axe                                                                       |
-| `husky`, `lint-staged`                                                   | Revisar lo modificado al hacer commit y `npm run check` al hacer push                                               |
+| Paquete                                                                  | Por qué                                                                               |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `typescript` (5.9), `@types/*`                                           | Tipado estricto. TypeScript 5.9 porque `typescript-eslint` aún no admite TS 7         |
+| `eslint` (9), `eslint-config-next`, `eslint-config-prettier`, `prettier` | Lint con las reglas de la hoja (complejidad, tamaño de función, `jsx-a11y`) y formato |
+| `vitest`, `@vitest/coverage-v8`, `vite`, `@vitejs/plugin-react`, `jsdom` | Pruebas con umbral de cobertura (`vite` explícito porque el plugin lo exige)          |
+| `@testing-library/react`, `/dom`, `/user-event`, `/jest-dom`             | Probar por rol y etiqueta, como lo haría una persona                                  |
+| `axe-core`                                                               | Accesibilidad dentro de Vitest                                                        |
+| `@playwright/test`, `@axe-core/playwright`                               | Pruebas en navegador real a 3 anchos, con axe                                         |
+| `husky`, `lint-staged`                                                   | Revisar lo modificado al hacer commit y `npm run check` al hacer push                 |
 
 Herramientas que se usan **sin instalarlas** en el proyecto: Lighthouse, `puppeteer-core` y `vnu-jar`
-(validador HTML de W3C), con `npx` o desde una carpeta aparte.
+(validador HTML de W3C).
 
 ## Calidad, IA y despliegue
 
 - Requisitos de calidad y sus evidencias: [`CALIDAD.md`](CALIDAD.md).
 - Configuración de IA, pruebas de contención y bitácora: [`IA.md`](IA.md).
-- **Despliegue:** importar el repositorio en Vercel y definir `NEXT_PUBLIC_SITE_URL`. **Aún no se
-  desplegó**: las mediciones de `CALIDAD.md` son de la compilación de producción en local y deben
-  repetirse sobre la URL de Vercel (PageSpeed Insights).
-- **Dependencias con avisos:** `npm audit --omit=dev` da 0. Las 19 alertas «altas» de desarrollo son un
+- **No se ha desplegado en Vercel**: las mediciones son de la compilación de producción en local y
+  deben repetirse sobre la URL pública (PageSpeed Insights).
+- **Dependencias con avisos:** `npm audit --omit=dev` da 0. Las alertas «altas» de desarrollo son un
   solo aviso de `picomatch ≤ 4.0.7`, sin versión corregida publicada; la CI las muestra sin bloquear.
