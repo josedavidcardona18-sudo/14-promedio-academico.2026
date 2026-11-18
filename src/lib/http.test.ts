@@ -1,9 +1,12 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { noEncontrado, peticionInvalida } from './errores';
 import { creado, json, leer, leerCuerpo, manejar, sinContenido, verificarOrigen } from './http';
 import { reiniciarLimites } from './limite';
+import { registrar } from './log';
+
+vi.mock('./log', () => ({ registrar: vi.fn() }));
 
 const contexto = {};
 const sitio = 'http://localhost';
@@ -11,7 +14,10 @@ const pedir = (ruta = '/api/x', init: RequestInit = {}) => new Request(`${sitio}
 const escritura = (init: RequestInit = {}) =>
   pedir('/api/x', { method: 'POST', headers: { origin: sitio }, ...init });
 
-beforeEach(reiniciarLimites);
+beforeEach(() => {
+  reiniciarLimites();
+  vi.mocked(registrar).mockClear();
+});
 
 describe('manejar', () => {
   it('devuelve la respuesta del manejador con un identificador de petición', async () => {
@@ -62,6 +68,36 @@ describe('manejar', () => {
     expect(r.status).toBe(500);
     expect(JSON.parse(texto)).toEqual({ error: 'Error interno.' });
     expect(texto).not.toContain('abc123');
+  });
+
+  it('el registro de un 500 anota el tipo y el código del error, nunca su mensaje', async () => {
+    const fallo = Object.assign(new Error('clave privada: -----BEGIN-----'), {
+      name: 'FirebaseAppError',
+      code: 'app/invalid-credential',
+    });
+    const GET = manejar(async () => {
+      throw fallo;
+    });
+    await GET(pedir(), contexto);
+    const lineas = vi.mocked(registrar).mock.calls.map(([evento]) => evento);
+    expect(lineas).toContainEqual(
+      expect.objectContaining({
+        nivel: 'error',
+        error: 'FirebaseAppError',
+        codigo: 'app/invalid-credential',
+      }),
+    );
+    expect(JSON.stringify(lineas)).not.toContain('clave privada');
+  });
+
+  it('un error sin código se anota solo con su nombre', async () => {
+    const GET = manejar(async () => {
+      throw new TypeError('x');
+    });
+    await GET(pedir(), contexto);
+    const error = vi.mocked(registrar).mock.calls.find(([e]) => e['nivel'] === 'error')?.[0];
+    expect(error).toMatchObject({ error: 'TypeError' });
+    expect(error).not.toHaveProperty('codigo');
   });
 
   it('peticionInvalida lleva el 400 y sus detalles', () => {

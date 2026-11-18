@@ -86,6 +86,15 @@ function aplicarLimite(peticion: Request, limite: Limite): void {
   }
 }
 
+/** `{ error: 'FirebaseAppError', codigo: 'app/invalid-credential' }`: lo bastante para depurar, sin datos. */
+function datosDelFallo(error: unknown): Record<string, string> {
+  const nombre = error instanceof Error ? error.name : 'desconocido';
+  const codigo = typeof error === 'object' && error !== null && 'code' in error ? error.code : null;
+  return typeof codigo === 'string' || typeof codigo === 'number'
+    ? { error: nombre, codigo: String(codigo) }
+    : { error: nombre };
+}
+
 function respuestaDeError(error: unknown): Response {
   if (error instanceof ZodError) {
     return json(
@@ -122,11 +131,7 @@ export function manejar<Contexto>(
     } catch (error) {
       respuesta = respuestaDeError(error);
       if (respuesta.status >= 500) {
-        registrar({
-          nivel: 'error',
-          id,
-          error: error instanceof Error ? error.name : 'desconocido',
-        });
+        registrar({ nivel: 'error', id, ...datosDelFallo(error) });
       }
     }
     respuesta.headers.set('Cache-Control', 'no-store');

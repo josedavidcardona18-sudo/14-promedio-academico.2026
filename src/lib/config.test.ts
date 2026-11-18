@@ -23,6 +23,44 @@ describe('configFirebase', () => {
   });
 });
 
+describe('configFirebase · cómo llega la clave desde Vercel o un .env', () => {
+  const pem = '-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----\n';
+  const con = (clave: string) => configFirebase({ ...completo, FIREBASE_PRIVATE_KEY: clave });
+
+  it('con saltos de línea reales (pegada tal cual en Vercel) queda igual', () => {
+    expect(con(pem)?.privateKey).toBe(pem);
+  });
+
+  it('con \\n literales y con las comillas del .env, también se entiende', () => {
+    const escapada = pem.replaceAll('\n', '\\n');
+    expect(con(`"${escapada}"`)?.privateKey).toBe(pem);
+    expect(con(`'${escapada}'`)?.privateKey).toBe(pem);
+    expect(con(`  ${escapada}  `)?.privateKey).toBe(pem);
+  });
+
+  it('una clave vacía o solo de espacios cuenta como «sin configurar»', () => {
+    expect(con('   ')).toBeNull();
+    expect(con('')).toBeNull();
+  });
+
+  it('siempre termina en un único salto de línea, como un PEM normal', () => {
+    expect(con(pem.trim())?.privateKey).toBe(pem);
+    expect(con(`${pem}\n\n`)?.privateKey).toBe(pem);
+  });
+
+  it('recorta espacios en el proyecto y en el correo', () => {
+    const config = configFirebase({
+      ...completo,
+      FIREBASE_PROJECT_ID: ' mi-proyecto\n',
+      FIREBASE_CLIENT_EMAIL: ' servicio@mi-proyecto.iam.gserviceaccount.com ',
+    });
+    expect(config).toMatchObject({
+      projectId: 'mi-proyecto',
+      clientEmail: 'servicio@mi-proyecto.iam.gserviceaccount.com',
+    });
+  });
+});
+
 describe('modoDemo', () => {
   it('es explícito con MODO_DEMO=1 y se apaga con MODO_DEMO=0', () => {
     expect(modoDemo({ MODO_DEMO: '1', NODE_ENV: 'production' })).toBe(true);
@@ -35,6 +73,14 @@ describe('modoDemo', () => {
 
   it('en desarrollo con Firebase configurado, usa las cuentas reales', () => {
     expect(modoDemo({ NODE_ENV: 'development', ...completo })).toBe(false);
+  });
+
+  it('en producción, con credenciales de Firebase, MODO_DEMO=1 se ignora (no abre la API de datos reales)', () => {
+    expect(modoDemo({ MODO_DEMO: '1', NODE_ENV: 'production', ...completo })).toBe(false);
+  });
+
+  it('en desarrollo sí se puede forzar el modo demostración aunque haya credenciales', () => {
+    expect(modoDemo({ MODO_DEMO: '1', NODE_ENV: 'development', ...completo })).toBe(true);
   });
 
   it('en producción sin Firebase NO queda abierta: se cierra', () => {

@@ -113,6 +113,13 @@ describe('mensajeDeCuenta', () => {
     expect(mensajeDeCuenta({ code: 'auth/network-request-failed' })).toContain('conexión');
   });
 
+  it('los errores de configuración del proyecto dicen qué revisar en la consola de Firebase', () => {
+    expect(mensajeDeCuenta({ code: 'auth/operation-not-allowed' })).toContain('Método de acceso');
+    expect(mensajeDeCuenta({ code: 'auth/invalid-api-key' })).toContain('NEXT_PUBLIC_FIREBASE_');
+    expect(mensajeDeCuenta({ code: 'auth/configuration-not-found' })).toContain('Authentication');
+    expect(mensajeDeCuenta({ code: 'auth/unauthorized-domain' })).toContain('Dominios autorizados');
+  });
+
   it('un error desconocido da un mensaje genérico, nunca el texto interno', () => {
     expect(mensajeDeCuenta(new Error('secreto interno'))).toBe(
       'No pudimos completar la acción. Inténtalo de nuevo.',

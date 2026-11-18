@@ -31,6 +31,15 @@ const MENSAJES: Record<string, string> = {
   'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
   'auth/network-request-failed': 'No hay conexión. Revisa tu internet e inténtalo de nuevo.',
   'auth/user-disabled': 'Esta cuenta está deshabilitada.',
+  // Errores de configuración del proyecto de Firebase: útiles para quien lo está montando.
+  'auth/operation-not-allowed':
+    'El acceso con correo y contraseña no está activado en Firebase (Authentication → Método de acceso).',
+  'auth/invalid-api-key':
+    'La configuración de Firebase no es válida: revisa las variables NEXT_PUBLIC_FIREBASE_*.',
+  'auth/configuration-not-found':
+    'Firebase Authentication no está configurado en este proyecto (Authentication → Comenzar).',
+  'auth/unauthorized-domain':
+    'Este dominio no está autorizado en Firebase (Authentication → Configuración → Dominios autorizados).',
 };
 
 export function mensajeDeCuenta(error: unknown): string {
