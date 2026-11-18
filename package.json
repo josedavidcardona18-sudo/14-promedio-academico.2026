@@ -20,6 +20,9 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@firebase/app": "^0.16.7",
+    "@firebase/auth": "^1.13.6",
+    "firebase-admin": "^14.5.1",
     "next": "^16.4.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

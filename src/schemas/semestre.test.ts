@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  cuerpoSesionSchema,
   idSchema,
+  listaQuerySchema,
+  materiaCreacionSchema,
   materiaEntradaSchema,
   metaSchema,
   notaSchema,
   semestreConMateriasSchema,
+  semestreEntradaSchema,
 } from './semestre';
 
 const mensajes = (resultado: { success: boolean; error?: { issues: { message: string }[] } }) =>
@@ -119,6 +123,7 @@ describe('metaSchema, idSchema y semestre completo', () => {
   it('un semestre con sus materias se valida entero', () => {
     const semestre = {
       id: 'ejemplo',
+      creadoEn: '2026-08-01T00:00:00.000Z',
       nombre: '2026-2',
       meta: 3,
       materias: [{ id: 'calculo', nombre: 'Cálculo', creditos: 4, notas: [nota(4, 30)] }],
@@ -126,5 +131,42 @@ describe('metaSchema, idSchema y semestre completo', () => {
     expect(semestreConMateriasSchema.safeParse(semestre).success).toBe(true);
     const roto = { ...semestre, materias: [{ ...semestre.materias[0], creditos: 0 }] };
     expect(semestreConMateriasSchema.safeParse(roto).success).toBe(false);
+  });
+});
+
+describe('esquemas de la API de escritura', () => {
+  it('al crear una materia las notas son opcionales y quedan vacías', () => {
+    const r = materiaCreacionSchema.safeParse({ nombre: 'Física', creditos: 3 });
+    expect(r.success && r.data.notas).toEqual([]);
+  });
+
+  it('al reemplazar una materia (PUT) las notas son obligatorias', () => {
+    expect(materiaEntradaSchema.safeParse({ nombre: 'Física', creditos: 3 }).success).toBe(false);
+  });
+
+  it('el semestre de entrada pide nombre y una meta de 3,0 a 5,0, y nada más', () => {
+    expect(semestreEntradaSchema.safeParse({ nombre: '2026-2', meta: 3.5 }).success).toBe(true);
+    expect(semestreEntradaSchema.safeParse({ nombre: '2026-2', meta: 2 }).success).toBe(false);
+    expect(
+      semestreEntradaSchema.safeParse({ nombre: '2026-2', meta: 3, uid: 'otro' }).success,
+    ).toBe(false);
+  });
+
+  it('la paginación: límite por defecto 20, máximo 100, cursor opcional', () => {
+    const vacio = listaQuerySchema.safeParse({});
+    expect(vacio.success && vacio.data.limite).toBe(20);
+    const texto = listaQuerySchema.safeParse({ limite: '50', cursor: 'abc-1' });
+    expect(texto.success && [texto.data.limite, texto.data.cursor]).toEqual([50, 'abc-1']);
+    expect(listaQuerySchema.safeParse({ limite: '101' }).success).toBe(false);
+    expect(listaQuerySchema.safeParse({ limite: '0' }).success).toBe(false);
+    expect(listaQuerySchema.safeParse({ cursor: '../x' }).success).toBe(false);
+  });
+
+  it('el cuerpo de la sesión solo lleva el token', () => {
+    expect(cuerpoSesionSchema.safeParse({ idToken: 'x'.repeat(30) }).success).toBe(true);
+    expect(cuerpoSesionSchema.safeParse({ idToken: 'corto' }).success).toBe(false);
+    expect(cuerpoSesionSchema.safeParse({ idToken: 'x'.repeat(30), rol: 'admin' }).success).toBe(
+      false,
+    );
   });
 });

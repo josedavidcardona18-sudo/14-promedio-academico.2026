@@ -13,6 +13,7 @@ export const LIMITES = {
   porcentajeTotal: 100,
   maxNotasPorMateria: 12,
   maxMateriasPorSemestre: 30,
+  maxSemestres: 20,
   maxCreditos: 20,
   maxNombre: 60,
   maxNombreNota: 40,
@@ -103,12 +104,35 @@ export const semestreEntradaSchema = z.strictObject({
 
 export const semestreConMateriasSchema = z.strictObject({
   id: idSchema,
+  creadoEn: z.iso.datetime('Fecha inválida.'),
   nombre: nombreSchema(LIMITES.maxNombreNota, 'Escribe el nombre del semestre.'),
   meta: metaSchema,
   materias: z.array(materiaSchema).max(LIMITES.maxMateriasPorSemestre),
+});
+
+/** Al crear una materia las notas son opcionales (empieza vacía); al reemplazarla (PUT) son obligatorias. */
+export const materiaCreacionSchema = materiaBaseSchema
+  .extend({ notas: materiaBaseSchema.shape.notas.default([]) })
+  .superRefine(validarSuma);
+
+/** `?limite=20&cursor=<id>`: paginación por cursor; `limite` máximo 100. */
+export const listaQuerySchema = z.strictObject({
+  limite: z.coerce
+    .number('El límite debe ser un número.')
+    .int('El límite debe ser un entero.')
+    .min(1, 'El límite mínimo es 1.')
+    .max(100, 'El límite máximo es 100.')
+    .default(20),
+  cursor: idSchema.optional(),
+});
+
+/** Cuerpo de `POST /api/auth/sesion`: el token que entrega Firebase Auth en el navegador. */
+export const cuerpoSesionSchema = z.strictObject({
+  idToken: z.string('Falta el token.').min(20, 'Token inválido.').max(4096, 'Token inválido.'),
 });
 
 export type Nota = z.infer<typeof notaSchema>;
 export type MateriaEntrada = z.infer<typeof materiaEntradaSchema>;
 export type Materia = z.infer<typeof materiaSchema>;
 export type SemestreConMaterias = z.infer<typeof semestreConMateriasSchema>;
+export type SemestreEntrada = z.infer<typeof semestreEntradaSchema>;
