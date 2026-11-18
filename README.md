@@ -254,5 +254,7 @@ Herramientas que se usan **sin instalarlas** en el proyecto: Lighthouse, `puppet
 - Configuración de IA, pruebas de contención y bitácora: [`IA.md`](IA.md).
 - **No se ha desplegado en Vercel**: las mediciones son de la compilación de producción en local y
   deben repetirse sobre la URL pública (PageSpeed Insights).
-- **Dependencias con avisos:** `npm audit --omit=dev` da 0. Las alertas «altas» de desarrollo son un
-  solo aviso de `picomatch ≤ 4.0.7`, sin versión corregida publicada; la CI las muestra sin bloquear.
+- **Dependencias con avisos:** `npm audit --omit=dev` da **0** (lo que se despliega). El `npm audit`
+  completo muestra «19 altas», pero son **un solo aviso** (`picomatch ≤ 4.0.7`, ReDoS) que npm repite en
+  cada paquete de las herramientas de desarrollo (ESLint, typescript-eslint…) que lo usan; no hay versión
+  corregida publicada y la CI lo muestra sin bloquear.
