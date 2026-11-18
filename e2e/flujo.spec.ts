@@ -5,6 +5,7 @@ import {
   abrir,
   alertaDeError,
   cuentaVacia,
+  irA,
   notaDe,
   porcentajeDe,
   romperApi,
@@ -185,7 +186,7 @@ test.describe('historial: crear, editar, comparar y eliminar semestres', () => {
 
   test('el semestre elegido se conserva al moverse por la navegación', async ({ page }) => {
     await abrir(page, RESUMEN);
-    await page.getByRole('link', { name: 'Simulador' }).click();
+    await irA(page, 'Simulador');
     await expect(page).toHaveURL(/\/simulador\?semestre=ejemplo$/);
     await expect(page.getByLabel('Semestre')).toHaveValue('ejemplo');
   });

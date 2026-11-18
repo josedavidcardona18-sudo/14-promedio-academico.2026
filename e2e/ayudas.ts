@@ -55,6 +55,29 @@ export async function abrir(page: Page, ruta: string): Promise<void> {
   await esperarDatos(page, ruta);
 }
 
+/** El botón del menú colapsable: solo se ve en pantallas estrechas (menos de 768 px). */
+export const botonDelMenu = (page: Page) => page.getByRole('button', { name: 'Menú' });
+
+/** En pantallas estrechas la navegación está en un menú colapsable: se abre antes de usarla. */
+export async function abrirMenu(page: Page): Promise<void> {
+  const boton = botonDelMenu(page);
+  if ((await boton.isVisible()) && (await boton.getAttribute('aria-expanded')) !== 'true') {
+    await boton.click();
+  }
+}
+
+/** Va a una pantalla con la navegación principal, abriendo el menú si hace falta. */
+export async function irA(
+  page: Page,
+  nombre: 'Resumen' | 'Simulador' | 'Historial',
+): Promise<void> {
+  await abrirMenu(page);
+  await page
+    .getByRole('navigation', { name: 'Principal' })
+    .getByRole('link', { name: nombre })
+    .click();
+}
+
 export const notaDe = (page: Page, n: number) =>
   page.getByRole('group', { name: `Nota ${n}` }).getByLabel('Nota (0,0 a 5,0)');
 

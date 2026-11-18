@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
-import { RESUMEN, abrir, notaDe, porcentajeDe } from './ayudas';
+import { RESUMEN, abrir, irA, notaDe, porcentajeDe } from './ayudas';
 
 // Mide LCP, CLS e INP reales en el navegador (Lighthouse no mide INP en laboratorio):
 //   VITALES=1 npx playwright test e2e/vitales.spec.ts --project=movil-360
@@ -54,7 +54,7 @@ test('LCP, CLS e INP con la CPU 4× más lenta', async ({ page, context }, info)
   await page.keyboard.type('5', { delay: 50 });
   await page.getByRole('button', { name: 'Agregar nota' }).click();
   await page.getByRole('button', { name: 'Quitar la nota 4' }).click();
-  await page.getByRole('link', { name: 'Simulador' }).click();
+  await irA(page, 'Simulador');
   await page.getByLabel('Meta (3,0 a 5,0)').click();
   await page.keyboard.type('4', { delay: 50 });
   await page.getByLabel('Materia').selectOption({ label: 'Álgebra lineal' });

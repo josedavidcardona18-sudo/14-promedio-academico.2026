@@ -17,7 +17,15 @@ export default defineConfig({
     command: `npm run build && npm run start -- -p ${PUERTO}`,
     url: `http://localhost:${PUERTO}`,
     // Las pruebas corren en modo demostración (sin cuentas ni Firebase): una cuenta, datos en memoria.
-    env: { MODO_DEMO: '1' },
+    env: {
+      MODO_DEMO: '1',
+      // Configuración web FALSA de Firebase (es pública por diseño): permite probar en el navegador
+      // el inicio de sesión con el SDK real y la red de Google interceptada. Nada llega a Firebase.
+      NEXT_PUBLIC_FIREBASE_API_KEY: 'clave-falsa-e2e',
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'e2e.firebaseapp.com',
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'e2e',
+      NEXT_PUBLIC_FIREBASE_APP_ID: '1:1:web:e2e',
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
   },

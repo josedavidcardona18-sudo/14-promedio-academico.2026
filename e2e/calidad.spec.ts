@@ -7,6 +7,8 @@ import {
   cuentaVacia,
   test,
   abrir,
+  abrirMenu,
+  botonDelMenu,
   alertaDeError,
   notaDe,
   romperApi,
@@ -33,6 +35,14 @@ for (const tema of TEMAS) {
         await sinViolacionesDeAxe(page);
       });
     }
+
+    test('con el menú abierto en móvil: 0 violaciones', async ({ page }, info) => {
+      test.skip(info.project.name !== 'movil-360', 'el menú colapsable es solo de móvil');
+      await abrir(page, RESUMEN);
+      await abrirMenu(page);
+      await expect(page.getByRole('link', { name: 'Historial' })).toBeVisible();
+      await sinViolacionesDeAxe(page);
+    });
 
     test('/ con la API caída (error con reintento): 0 violaciones', async ({ page }) => {
       await romperApi(page);
@@ -153,6 +163,57 @@ test.describe('responsive', () => {
       });
       expect(chicos, ruta).toEqual([]);
     }
+  });
+});
+
+test.describe('navegación: menú colapsable en móvil y enlaces visibles desde 768 px', () => {
+  test('en pantallas estrechas los enlaces están en un menú que se abre con el teclado y se cierra con Esc', async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== 'movil-360', 'el menú colapsable es solo de móvil');
+    await abrir(page, RESUMEN);
+    const enlaces = page.getByRole('navigation', { name: 'Principal' }).getByRole('link');
+    await expect(botonDelMenu(page)).toBeVisible();
+    await expect(botonDelMenu(page)).toHaveAttribute('aria-expanded', 'false');
+    await expect(enlaces.first()).toBeHidden();
+
+    await botonDelMenu(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(botonDelMenu(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(enlaces).toHaveCount(3);
+    for (const enlace of await enlaces.all()) {
+      await expect(enlace).toBeVisible();
+      expect((await enlace.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.5);
+    }
+    await sinDesbordeHorizontal(page);
+
+    await page.keyboard.press('Tab');
+    await expect(enlaces.first()).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(botonDelMenu(page)).toBeFocused();
+    await expect(botonDelMenu(page)).toHaveAttribute('aria-expanded', 'false');
+    await expect(enlaces.first()).toBeHidden();
+  });
+
+  test('abrir el menú no mueve el contenido (se superpone, sin saltos de diseño)', async ({
+    page,
+  }, info) => {
+    test.skip(info.project.name !== 'movil-360', 'el menú colapsable es solo de móvil');
+    await abrir(page, RESUMEN);
+    const antes = await page.getByRole('heading', { level: 1 }).boundingBox();
+    await abrirMenu(page);
+    const despues = await page.getByRole('heading', { level: 1 }).boundingBox();
+    expect(despues?.y).toBe(antes?.y);
+  });
+
+  test('desde 768 px los enlaces se ven siempre y no hay botón de menú', async ({ page }, info) => {
+    test.skip(info.project.name === 'movil-360', 'aplica a tableta y escritorio');
+    await abrir(page, RESUMEN);
+    await expect(botonDelMenu(page)).toBeHidden();
+    await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link')).toHaveCount(
+      3,
+    );
+    await expect(page.getByRole('link', { name: 'Historial' })).toBeVisible();
   });
 });
 

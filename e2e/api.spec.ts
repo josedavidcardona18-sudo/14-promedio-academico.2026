@@ -100,10 +100,49 @@ test.describe('API REST (contra la compilación de producción)', () => {
   });
 
   test('GET /api/auth/yo: en modo demostración dice quién es', async ({ request }) => {
-    expect(await (await request.get('/api/auth/yo')).json()).toMatchObject({
-      uid: 'demo',
+    expect(await (await request.get('/api/auth/yo')).json()).toEqual({
+      usuario: { uid: 'demo', correo: null, rol: 'estudiante' },
       demo: true,
     });
+  });
+
+  test('POST /api/auth/sesion responde 204 sin cuerpo (en demostración no hay cuentas ni cookie)', async ({
+    request,
+    baseURL,
+  }) => {
+    const r = await request.post('/api/auth/sesion', {
+      headers: { origin: baseURL ?? '' },
+      data: {},
+    });
+    expect(r.status()).toBe(204);
+    expect(await r.text()).toBe('');
+    expect(r.headers()['set-cookie']).toBeUndefined();
+  });
+
+  test('DELETE /api/auth/sesion responde 204 y borra la cookie (HttpOnly, SameSite=Lax)', async ({
+    request,
+    baseURL,
+  }) => {
+    const r = await request.delete('/api/auth/sesion', { headers: { origin: baseURL ?? '' } });
+    expect(r.status()).toBe(204);
+    const cookie = r.headers()['set-cookie'] ?? '';
+    expect(cookie).toContain('sesion=;');
+    expect(cookie).toContain('Max-Age=0');
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Lax');
+  });
+
+  test('GET /api/semestres/ejemplo/materias: lista paginada con cursor', async ({ request }) => {
+    const primera = await (await request.get('/api/semestres/ejemplo/materias?limite=3')).json();
+    expect(primera.items).toHaveLength(3);
+    expect(primera.siguienteCursor).toBe('algebra-lineal');
+    const segunda = await (
+      await request.get(
+        `/api/semestres/ejemplo/materias?limite=3&cursor=${primera.siguienteCursor}`,
+      )
+    ).json();
+    expect(segunda.items.map((m: { id: string }) => m.id)).toEqual(['ingles-ii']);
+    expect(segunda.siguienteCursor).toBeNull();
   });
 
   test('un identificador con caracteres raros se rechaza con 400', async ({ request }) => {

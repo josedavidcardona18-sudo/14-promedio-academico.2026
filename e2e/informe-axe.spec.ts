@@ -13,6 +13,7 @@ const PAGINAS = [
   { nombre: 'materia', ruta: MATERIA },
   { nombre: 'simulador', ruta: SIMULADOR },
   { nombre: 'historial', ruta: '/historial' },
+  { nombre: 'login', ruta: '/login' },
 ] as const;
 const TEMAS = [
   { nombre: 'claro', medios: { colorScheme: 'light' } },

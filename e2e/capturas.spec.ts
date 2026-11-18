@@ -1,5 +1,14 @@
 import { test } from '@playwright/test';
-import { MATERIA, RESUMEN, SIMULADOR, abrir, alertaDeError, notaDe, romperApi } from './ayudas';
+import {
+  MATERIA,
+  RESUMEN,
+  SIMULADOR,
+  abrir,
+  abrirMenu,
+  alertaDeError,
+  notaDe,
+  romperApi,
+} from './ayudas';
 
 // Genera las capturas de evidencia (calidad/capturas). No corre en la suite normal:
 //   CAPTURAS=1 npx playwright test e2e/capturas.spec.ts
@@ -34,4 +43,17 @@ test('capturas de las pantallas, sus estados y el tema oscuro', async ({ page },
 
   await abrir(page, '/historial');
   await page.screenshot({ path: `${carpeta}/historial-oscuro-${ancho}.png` });
+
+  await page.emulateMedia({ colorScheme: 'light' });
+  await abrir(page, '/historial');
+  await page.screenshot({ path: `${carpeta}/historial-${ancho}.png` });
+
+  await abrir(page, '/login');
+  await page.screenshot({ path: `${carpeta}/login-${ancho}.png` });
+
+  if (ancho < 768) {
+    await abrir(page, RESUMEN);
+    await abrirMenu(page);
+    await page.screenshot({ path: `${carpeta}/menu-abierto-${ancho}.png` });
+  }
 });
