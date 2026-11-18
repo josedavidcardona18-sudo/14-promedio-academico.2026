@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { violacionesDeAccesibilidad } from '../../vitest.axe';
-import { SEMESTRE_DE_EJEMPLO } from '@/repositories/semestres';
+import { SEMESTRE_DE_EJEMPLO } from '@/repositories/ejemplo';
 import { ContenedorResumen } from './ContenedorResumen';
 import { ContenedorSimulador } from './ContenedorSimulador';
 import { EditorMateria } from './EditorMateria';

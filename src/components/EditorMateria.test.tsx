@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { SEMESTRE_DE_EJEMPLO } from '@/repositories/semestres';
+import { SEMESTRE_DE_EJEMPLO } from '@/repositories/ejemplo';
 import { EditorMateria } from './EditorMateria';
 
 function primeraMateria() {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SEMESTRE_DE_EJEMPLO } from '@/repositories/semestres';
+import { SEMESTRE_DE_EJEMPLO } from '@/repositories/ejemplo';
 import { claveDeBorrador, leerBorrador, serializarBorrador } from './borrador';
 
 const materias = SEMESTRE_DE_EJEMPLO.materias;

@@ -1,24 +1,24 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { obtenerRepositorio } from '@/repositories';
-import { crearRepositorioDeEjemplo } from '@/repositories/semestres';
-import type { SemestreConMaterias } from '@/schemas/semestre';
+import { pedir, reiniciarEntorno } from '@/app/api/pruebas-api';
+
+vi.mock(
+  '@/lib/firebase-admin',
+  async () => (await import('@/app/api/pruebas-api')).moduloFirebaseFalso,
+);
+vi.mock('@/repositories', async () => (await import('@/app/api/pruebas-api')).moduloRepositorios);
+
+beforeEach(reiniciarEntorno);
 import { GET } from './route';
 
-vi.mock('@/repositories', () => ({ obtenerRepositorio: vi.fn() }));
-
-const pedir = (id: string, consulta = '') =>
-  GET(new Request(`http://localhost/api/semestres/${id}/resumen${consulta}`), {
+const pedirResumen = (id: string, consulta = '', opciones: Parameters<typeof pedir>[1] = {}) =>
+  GET(pedir(`/api/semestres/${id}/resumen${consulta}`, opciones), {
     params: Promise.resolve({ id }),
   });
 
-beforeEach(() => {
-  vi.mocked(obtenerRepositorio).mockReturnValue(crearRepositorioDeEjemplo());
-});
-
 describe('GET /api/semestres/:id/resumen', () => {
   it('200: promedios calculados en el servidor, ponderados por créditos', async () => {
-    const r = await pedir('ejemplo');
+    const r = await pedirResumen('ejemplo');
     const cuerpo = await r.json();
     expect(r.status).toBe(200);
     expect(cuerpo).toMatchObject({
@@ -33,7 +33,7 @@ describe('GET /api/semestres/:id/resumen', () => {
   });
 
   it('200: la meta de la consulta cambia lo que pide cada materia', async () => {
-    const cuerpo = await (await pedir('ejemplo', '?meta=4')).json();
+    const cuerpo = await (await pedirResumen('ejemplo', '?meta=4')).json();
     const porId = (id: string) => cuerpo.materias.find((m: { id: string }) => m.id === id);
     expect(cuerpo.meta).toBe(4);
     expect(porId('programacion-web').simulacion).toEqual({
@@ -54,28 +54,33 @@ describe('GET /api/semestres/:id/resumen', () => {
       ['2', 'La meta no puede ser menor que 3,0.'],
       ['abc', 'Escribe un número.'],
     ] as const) {
-      const r = await pedir('ejemplo', `?meta=${meta}`);
+      const r = await pedirResumen('ejemplo', `?meta=${meta}`);
       expect(r.status).toBe(400);
       expect((await r.json()).detalles).toEqual([{ campo: 'meta', mensaje }]);
     }
   });
 
-  it('404: un semestre que no existe', async () => {
-    const r = await pedir('otro');
-    expect(r.status).toBe(404);
-    expect(await r.json()).toEqual({ error: 'Semestre no encontrado.' });
+  it('404: un semestre que no existe o que es de otra persona; 401 sin sesión', async () => {
+    expect((await pedirResumen('otro')).status).toBe(404);
+    expect((await pedirResumen('ejemplo', '', { uid: 'beto' })).status).toBe(404);
+    expect((await pedirResumen('ejemplo', '', { uid: null })).status).toBe(401);
   });
 });
 
 describe('integración ruta → servicio → repositorio (criterio de aceptación 1)', () => {
   it('con 4,0 (30 %) y 3,0 (30 %), el simulador pide 2,3 en el 40 % restante', async () => {
-    const semestre: SemestreConMaterias = {
-      id: 'criterio',
-      nombre: '2026-2',
-      meta: 3,
-      materias: [
-        {
-          id: 'fisica',
+    const { POST } = await import('../../route');
+    const { POST: crearMateria } = await import('../materias/route');
+    const semestre = await (
+      await POST(
+        pedir('/api/semestres', { metodo: 'POST', cuerpo: { nombre: '2026-2', meta: 3 } }),
+        {},
+      )
+    ).json();
+    await crearMateria(
+      pedir(`/api/semestres/${semestre.id}/materias`, {
+        metodo: 'POST',
+        cuerpo: {
           nombre: 'Física',
           creditos: 3,
           notas: [
@@ -83,11 +88,11 @@ describe('integración ruta → servicio → repositorio (criterio de aceptació
             { nombre: 'Parcial 2', valor: 3, porcentaje: 30 },
           ],
         },
-      ],
-    };
-    vi.mocked(obtenerRepositorio).mockReturnValue({ obtener: async () => semestre });
+      }),
+      { params: Promise.resolve({ id: semestre.id }) },
+    );
 
-    const cuerpo = await (await pedir('criterio')).json();
+    const cuerpo = await (await pedirResumen(semestre.id)).json();
 
     expect(cuerpo.materias[0].simulacion).toEqual({
       tipo: 'necesaria',
@@ -99,7 +104,7 @@ describe('integración ruta → servicio → repositorio (criterio de aceptació
   });
 
   it('con una meta imposible avisa de que ya no es alcanzable (criterio 3)', async () => {
-    const cuerpo = await (await pedir('ejemplo', '?meta=5')).json();
+    const cuerpo = await (await pedirResumen('ejemplo', '?meta=5')).json();
     const algebra = cuerpo.materias.find((m: { id: string }) => m.id === 'algebra-lineal');
     expect(algebra.simulacion.tipo).toBe('imposible');
   });

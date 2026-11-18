@@ -1,7 +1,8 @@
-import { json, leer, manejar } from '@/lib/http';
-import { obtenerRepositorio } from '@/repositories';
-import { idSchema } from '@/schemas/semestre';
-import { obtenerSemestre } from '@/services/semestres';
+import { LIMITE_ESCRITURA } from '@/lib/constantes';
+import { json, leer, leerCuerpo, manejar, sinContenido } from '@/lib/http';
+import { idSchema, semestreEntradaSchema } from '@/schemas/semestre';
+import { actualizarSemestre, eliminarSemestre, obtenerSemestre } from '@/services/semestres';
+import { contextoAutenticado } from '../../contexto';
 
 export const runtime = 'nodejs';
 
@@ -9,11 +10,28 @@ interface Contexto {
   params: Promise<{ id: string }>;
 }
 
-/** Datos de ejemplo públicos: se pueden cachear. Las rutas privadas (Hito 4) usarán `no-store`. */
-export const GET = manejar<Contexto>(
-  async (_peticion, { params }) => {
+export const GET = manejar<Contexto>(async (peticion, { params }) => {
+  const { usuario, repositorio } = await contextoAutenticado(peticion);
+  const id = leer(idSchema, (await params).id, 'id');
+  return json(await obtenerSemestre(repositorio, usuario.uid, id));
+});
+
+export const PUT = manejar<Contexto>(
+  async (peticion, { params }) => {
+    const { usuario, repositorio } = await contextoAutenticado(peticion);
     const id = leer(idSchema, (await params).id, 'id');
-    return json(await obtenerSemestre(obtenerRepositorio(), id));
+    const datos = await leerCuerpo(peticion, semestreEntradaSchema);
+    return json(await actualizarSemestre(repositorio, usuario.uid, id, datos));
   },
-  { publica: true },
+  { limite: LIMITE_ESCRITURA },
+);
+
+export const DELETE = manejar<Contexto>(
+  async (peticion, { params }) => {
+    const { usuario, repositorio } = await contextoAutenticado(peticion);
+    const id = leer(idSchema, (await params).id, 'id');
+    await eliminarSemestre(repositorio, usuario.uid, id);
+    return sinContenido();
+  },
+  { limite: LIMITE_ESCRITURA },
 );
