@@ -16,5 +16,6 @@ if (typeof HTMLDialogElement !== 'undefined') {
 
 afterEach(() => {
   cleanup();
-  window.localStorage.clear();
+  // Los archivos de la API corren en Node (sin DOM): allí no hay window ni localStorage.
+  if (typeof window !== 'undefined') window.localStorage.clear();
 });
