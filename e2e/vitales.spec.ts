@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
-import { abrirConEjemplo } from './ayudas';
+import { abrir, notaDe, porcentajeDe } from './ayudas';
 
 // Mide LCP, CLS e INP reales en el navegador (Lighthouse no mide INP en laboratorio):
 //   VITALES=1 npx playwright test e2e/vitales.spec.ts --project=movil-360
@@ -45,24 +45,19 @@ test('LCP, CLS e INP con la CPU 4× más lenta', async ({ page, context }, info)
     });
   });
 
-  await abrirConEjemplo(page);
-  const nota = page
-    .getByRole('article', { name: 'Cálculo diferencial' })
-    .getByRole('group', { name: 'Corte 3' })
-    .getByLabel(/^Nota/);
-  await nota.click();
-  await page.keyboard.type('4,5', { delay: 50 });
-  await page
-    .getByRole('article', { name: 'Cálculo diferencial' })
-    .getByRole('button', { name: 'Agregar corte' })
-    .click();
-  await page.getByLabel('Nota máxima').click();
-  await page.keyboard.type('10', { delay: 50 });
-  await page.getByRole('button', { name: 'Eliminar Inglés II' }).click();
-  await page.keyboard.press('Escape');
-  await page.getByLabel('Nombre de la materia').click();
-  await page.keyboard.type('Química', { delay: 50 });
-  await page.getByRole('button', { name: 'Agregar materia' }).click();
+  await abrir(page, '/');
+  await page.getByRole('link', { name: 'Ver y editar notas de Cálculo diferencial' }).click();
+  await expect(page.getByRole('region', { name: 'Resultado' })).toBeVisible();
+  await notaDe(page, 3).click();
+  await page.keyboard.type('4.5', { delay: 50 });
+  await porcentajeDe(page, 1).click();
+  await page.keyboard.type('5', { delay: 50 });
+  await page.getByRole('button', { name: 'Agregar nota' }).click();
+  await page.getByRole('button', { name: 'Quitar la nota 4' }).click();
+  await page.getByRole('link', { name: 'Simulador' }).click();
+  await page.getByLabel('Meta (3,0 a 5,0)').click();
+  await page.keyboard.type('4', { delay: 50 });
+  await page.getByLabel('Materia').selectOption({ label: 'Álgebra lineal' });
   await page.waitForTimeout(500);
 
   const crudo: unknown = JSON.parse(
@@ -71,16 +66,15 @@ test('LCP, CLS e INP con la CPU 4× más lenta', async ({ page, context }, info)
   expect(esVitales(crudo)).toBe(true);
   if (!esVitales(crudo)) return;
   const ordenadas = [...crudo.interacciones].sort((a, b) => b - a);
-  const inp = ordenadas[0] ?? 0;
   const resultado = {
     proyecto: info.project.name,
     condiciones: 'next start local, Chromium, CPU 4× más lenta (CDP), sin estrangulamiento de red',
     LCP_ms: Math.round(crudo.lcp),
     CLS: Number(crudo.cls.toFixed(3)),
-    INP_ms: Math.round(inp),
+    INP_ms: Math.round(ordenadas[0] ?? 0),
     interacciones_medidas: ordenadas.length,
     peores_interacciones_ms: ordenadas.slice(0, 5).map(Math.round),
-    nota: 'Con menos de 50 interacciones, el INP es la peor de todas.',
+    nota: 'Con menos de 50 interacciones, el INP es la peor de todas. Flujo: resumen → editar notas → simulador.',
   };
   writeFileSync('calidad/vitales.json', JSON.stringify(resultado, null, 2) + '\n');
   expect(resultado.INP_ms).toBeLessThanOrEqual(200);

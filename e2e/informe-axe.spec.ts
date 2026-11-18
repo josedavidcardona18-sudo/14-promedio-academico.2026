@@ -1,13 +1,18 @@
 import AxeBuilder from '@axe-core/playwright';
 import { test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { abrirConEjemplo } from './ayudas';
+import { abrir } from './ayudas';
 
 // Guarda el resultado completo de axe (violaciones, reglas aprobadas y puntos «incompletos» que
 // exigen revisión manual) en calidad/axe:  INFORMES=1 npx playwright test e2e/informe-axe.spec.ts
 test.skip(!process.env.INFORMES, 'solo con INFORMES=1');
 
 const ETIQUETAS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
+const PAGINAS = [
+  { nombre: 'resumen', ruta: '/' },
+  { nombre: 'materia', ruta: '/materias/calculo-diferencial' },
+  { nombre: 'simulador', ruta: '/simulador' },
+] as const;
 const TEMAS = [
   { nombre: 'claro', medios: { colorScheme: 'light' } },
   { nombre: 'oscuro', medios: { colorScheme: 'dark' } },
@@ -19,12 +24,8 @@ for (const tema of TEMAS) {
     const ancho = info.project.use.viewport?.width ?? 0;
     mkdirSync('calidad/axe', { recursive: true });
     await page.emulateMedia(tema.medios);
-    const paginas = [
-      { nombre: 'acerca', abrir: () => page.goto('/acerca') },
-      { nombre: 'inicio-con-datos', abrir: () => abrirConEjemplo(page) },
-    ];
-    for (const { nombre, abrir } of paginas) {
-      await abrir();
+    for (const { nombre, ruta } of PAGINAS) {
+      await abrir(page, ruta);
       const r = await new AxeBuilder({ page }).withTags(ETIQUETAS).analyze();
       const informe = {
         pagina: nombre,
