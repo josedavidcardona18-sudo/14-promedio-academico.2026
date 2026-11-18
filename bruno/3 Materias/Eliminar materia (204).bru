@@ -1,0 +1,19 @@
+meta {
+  name: Eliminar materia (204)
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias/{{materiaId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 204
+}

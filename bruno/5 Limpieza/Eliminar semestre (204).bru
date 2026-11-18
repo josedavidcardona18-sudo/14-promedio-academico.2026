@@ -1,0 +1,19 @@
+meta {
+  name: Eliminar semestre (204)
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 204
+}

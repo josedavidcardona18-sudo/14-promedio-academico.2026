@@ -7,8 +7,9 @@ para aprobar?». Next.js 16 (App Router), React 19, TypeScript estricto, Zod. Un
 la interfaz y la API (Route Handlers en `src/app/api`). Idioma de la interfaz, el código y los
 commits: español. El documento del proyecto manda: cumpla sus requisitos antes de agregar extras.
 
-**Estado por hitos:** Hito 1 = datos de ejemplo detrás de un repositorio, `fetch`, validación y
-estados de carga/vacío/error. Firestore (Admin SDK) llega en el Hito 3 y Firebase Auth en el 4.
+**Estado por hitos:** Hitos 1 a 4 en el código: CRUD de semestres, materias y notas (`/historial`),
+API REST sobre Firestore (Admin SDK, solo servidor) y Firebase Auth con cookie de sesión, roles y
+`proxy.ts`. Sin Firebase configurado funciona en modo demostración (`MODO_DEMO=1`, datos en memoria).
 
 ## Comandos
 
@@ -21,8 +22,8 @@ estados de carga/vacío/error. Firestore (Admin SDK) llega en el Hito 3 y Fireba
 
 - `src/schemas/` · esquemas Zod **compartidos** por el formulario y la API. Las reglas se escriben una vez.
 - `src/services/` · reglas de negocio puras (cálculo). Sin React, DOM ni acceso a datos.
-- `src/repositories/` · único lugar que toca los datos (hoy ejemplo; en el Hito 3, Firestore).
-- `src/lib/` · errores, `manejar()`, cliente de la API, formato.
+- `src/repositories/` · único lugar que toca los datos (memoria o Firestore), siempre bajo `usuarios/{uid}`.
+- `src/lib/` · sesión (`requerirUsuario`), errores, `manejar()`, cliente de la API, formato.
 - `src/app/api/**/route.ts` · HTTP y validación → servicio → repositorio. Nunca lógica en la ruta.
 - `src/storage/` · único lugar que toca `localStorage` (borrador). `src/hooks/` · estado del cliente.
 - `src/components/` · interfaz (CSS Modules). `src/app/` · páginas.
@@ -36,6 +37,7 @@ estados de carga/vacío/error. Firestore (Admin SDK) llega en el Hito 3 y Fireba
   `no-console`, `eqeqeq`. Archivos ≤ 300 líneas. Sin código muerto ni comentado.
 - **Cálculo con enteros** (décimas): nunca sumar ni multiplicar notas como `number` decimal.
 - Validar todo con Zod en modo estricto (`z.strictObject`); el servidor decide, no el cliente.
+- El `uid` sale **solo** de la sesión verificada (`requerirUsuario`): jamás del cuerpo ni de la URL.
 - Errores de la API siempre `{ error, detalles? }`; un 500 nunca revela mensajes internos.
 - La prueba primero: escriba la prueba que falla, luego el código. Pruebas por rol y etiqueta.
 - HTML semántico: `<button>` para acciones, `<a>` para navegar, nada de `<div onClick>`; un solo

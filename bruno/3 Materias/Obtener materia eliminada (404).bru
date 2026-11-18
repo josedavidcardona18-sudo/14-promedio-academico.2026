@@ -1,0 +1,20 @@
+meta {
+  name: Obtener materia eliminada (404)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias/{{materiaId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.error: eq Materia no encontrada.
+}

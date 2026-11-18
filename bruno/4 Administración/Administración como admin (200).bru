@@ -1,0 +1,24 @@
+meta {
+  name: Administración como admin (200)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/admin/usuarios/demo/semestres
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idTokenAdmin}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.items: isArray
+}
+
+docs {
+  Usa el token de una persona con el rol `admin` (variable secreta `idTokenAdmin`).
+}

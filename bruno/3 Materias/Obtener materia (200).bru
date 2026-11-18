@@ -1,0 +1,20 @@
+meta {
+  name: Obtener materia (200)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias/{{materiaId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.nombre: eq Física I
+}

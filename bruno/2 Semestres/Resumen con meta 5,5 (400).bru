@@ -1,0 +1,19 @@
+meta {
+  name: Resumen con meta 5,5 (400)
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/resumen?meta=5.5
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 400
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Quién soy (200)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/auth/yo
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.rol: isString
+}
+
+docs {
+  La persona de la sesión verificada y su rol.
+}

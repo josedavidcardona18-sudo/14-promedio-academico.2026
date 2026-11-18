@@ -1,0 +1,31 @@
+meta {
+  name: Crear con campo de más (400)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/semestres
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "meta": 3,
+    "uid": "otra-persona"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+docs {
+  El uid nunca viene del cuerpo: un campo desconocido se rechaza.
+}

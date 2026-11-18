@@ -1,0 +1,27 @@
+meta {
+  name: Actualizar semestre (200)
+  type: http
+  seq: 11
+}
+
+put {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "Bruno 2027-1 (editado)",
+    "meta": 4
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.meta: eq 4
+}

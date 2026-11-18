@@ -1,0 +1,35 @@
+meta {
+  name: Crear materia (201)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "Física I",
+    "creditos": 3
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.notas: isEmpty
+}
+
+script:post-response {
+  bru.setVar("materiaId", res.body.id);
+}
+
+docs {
+  Las notas son opcionales al crear.
+}

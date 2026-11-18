@@ -1,0 +1,27 @@
+meta {
+  name: Reemplazar materia inexistente (404)
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias/no-existe
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "creditos": 3,
+    "notas": []
+  }
+}
+
+assert {
+  res.status: eq 404
+}

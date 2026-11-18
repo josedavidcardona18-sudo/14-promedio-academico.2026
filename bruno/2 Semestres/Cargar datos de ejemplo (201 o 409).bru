@@ -1,0 +1,25 @@
+meta {
+  name: Cargar datos de ejemplo (201 o 409)
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/api/ejemplo
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: isNumber
+}
+
+tests {
+  test("201 la primera vez, 409 si ya estaban cargados", function () {
+    expect([201, 409]).to.include(res.status);
+  });
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Resumen con nota necesaria 2,3 (200)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/resumen
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("pide 2,3 en el 40 % restante", function () {
+    const materia = res.body.materias.find((m) => m.id === bru.getVar("materiaId"));
+    expect(materia.simulacion).to.deep.equal({ tipo: "necesaria", requerida: 2.3, pesoPendiente: 40 });
+  });
+}

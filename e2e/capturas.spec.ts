@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import { abrir, alertaDeError, notaDe, romperApi } from './ayudas';
+import { MATERIA, RESUMEN, SIMULADOR, abrir, alertaDeError, notaDe, romperApi } from './ayudas';
 
 // Genera las capturas de evidencia (calidad/capturas). No corre en la suite normal:
 //   CAPTURAS=1 npx playwright test e2e/capturas.spec.ts
@@ -10,16 +10,16 @@ test('capturas de las pantallas, sus estados y el tema oscuro', async ({ page },
   const ancho = info.project.use.viewport?.width ?? 0;
   const carpeta = 'calidad/capturas';
 
-  await abrir(page, '/');
+  await abrir(page, RESUMEN);
   await page.screenshot({ path: `${carpeta}/resumen-${ancho}.png` });
 
-  await abrir(page, '/materias/calculo-diferencial');
+  await abrir(page, MATERIA);
   await page.screenshot({ path: `${carpeta}/materia-${ancho}.png` });
   await notaDe(page, 3).fill('5.5');
   await page.screenshot({ path: `${carpeta}/materia-con-error-${ancho}.png` });
   await notaDe(page, 3).fill('');
 
-  await abrir(page, '/simulador');
+  await abrir(page, SIMULADOR);
   await page.screenshot({ path: `${carpeta}/simulador-${ancho}.png` });
 
   const restaurar = await romperApi(page);
@@ -29,6 +29,9 @@ test('capturas de las pantallas, sus estados y el tema oscuro', async ({ page },
   await restaurar();
 
   await page.emulateMedia({ colorScheme: 'dark' });
-  await abrir(page, '/');
+  await abrir(page, RESUMEN);
   await page.screenshot({ path: `${carpeta}/resumen-oscuro-${ancho}.png` });
+
+  await abrir(page, '/historial');
+  await page.screenshot({ path: `${carpeta}/historial-oscuro-${ancho}.png` });
 });

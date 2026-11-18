@@ -5,10 +5,17 @@ responsive, accesibilidad, HTML semántico y retos de excelencia. Todo está en
 [`calidad/`](calidad/) y se puede **reproducir** con los comandos del final.
 
 > **Dónde se midió.** Las cifras son de la **compilación de producción servida en local**
-> (`next start`) con Chromium sin cabeza, **no de la URL de Vercel** (todavía no se ha desplegado:
-> es del Hito 4). Hay que repetir Lighthouse y PageSpeed Insights sobre la URL pública antes de
-> entregar. Lighthouse usó su perfil por defecto (móvil con estrangulamiento simulado de 4G lento y
-> CPU ×4; escritorio sin estrangulamiento). Versión: Lighthouse 13.6.0.
+> (`next start`) con Chromium sin cabeza, **no de la URL de Vercel** (todavía no se ha desplegado).
+> Hay que repetir Lighthouse y PageSpeed Insights sobre la URL pública antes de entregar. Lighthouse
+> usó su perfil por defecto (móvil con estrangulamiento simulado de 4G lento y CPU ×4; escritorio sin
+> estrangulamiento). Versión: Lighthouse 13.6.0.
+>
+> **Qué está vigente y qué no.** Las cifras de **Lighthouse, peso en kB, INP/LCP/CLS y el validador
+> W3C** son de las tres pantallas del **Hito 1**. Después se añadieron `/historial`, `/login`, los
+> formularios de semestres y materias y el guardado explícito: esas pantallas están cubiertas por las
+> pruebas automáticas de navegador (axe, tamaño de objetivos y texto, desbordes, consola y CSP, en 3
+> anchos y 4 temas), pero **Lighthouse, el validador W3C y las métricas de campo hay que repetirlos**
+> antes de entregar (comandos al final).
 
 ## Resumen de cumplimiento
 
@@ -28,9 +35,10 @@ responsive, accesibilidad, HTML semántico y retos de excelencia. Todo está en
 
 ### Lighthouse (móvil y escritorio, 3 páginas)
 
-La hoja pide una página «con sesión iniciada»; **todavía no hay inicio de sesión** (es del Hito 4).
-Se midieron la pública (`/`) y dos con formulario (`/materias/…` y `/simulador`); cuando exista la
-sesión hay que añadir la cuarta.
+La hoja pide una página «con sesión iniciada». Ya existe el inicio de sesión, pero estas cifras son de
+antes: se midieron la pública (`/`) y dos con formulario (`/materias/…` y `/simulador`) en la versión
+del Hito 1. Para la repetición, medir también `/historial` (privada: con la sesión abierta; en modo
+demostración `MODO_DEMO=1` no pide sesión y sirve para una medición local).
 
 | Página                                           | Perfil     | Rend. | Acces. | B. prác. | SEO |    LCP | CLS |   TBT | Informe                                                            |
 | ------------------------------------------------ | ---------- | ----: | -----: | -------: | --: | -----: | --: | ----: | ------------------------------------------------------------------ |
@@ -144,8 +152,11 @@ Lo automático detecta solo una parte. **Esto lo debe hacer una persona y firmar
 - **Seguridad:** `Content-Security-Policy` (producción, sin `unsafe-eval`), `Strict-Transport-Security`,
   `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`; sin
   `X-Powered-By`. Errores de la API sin detalles internos y **nunca cacheados**. Registro por petición
-  sin datos sensibles. `npm audit --omit=dev`: 0 vulnerabilidades. Pendientes de otros hitos: cookie
-  de sesión `HttpOnly`, comprobación de `Origin`, límite de frecuencia y autorización por objeto.
+  sin datos sensibles. `npm audit --omit=dev`: 0 vulnerabilidades. **Sesión y autorización:** cookie
+  `HttpOnly` + `SameSite=Lax` (+ `Secure` en producción) creada con el Admin SDK; verificación en
+  cada petición (`verifySessionCookie(…, true)`); comprobación de `Origin` (CSRF); límite de
+  frecuencia con `429` + `Retry-After`; roles por _custom claim_; aislamiento por `uid` con pruebas
+  de dos usuarios; Firestore cerrado con `firestore.rules`. Los detalles están en el `README`.
 - Fuentes del sistema (sin `next/font`: no hay fuentes web) e imágenes solo SVG/PNG generados.
 
 ## 5 · Retos de excelencia (elegidos 5; la hoja pide 3)
@@ -178,7 +189,8 @@ El validador de W3C se corrió con `vnu-jar` (Java) sobre el HTML y el DOM de ca
 
 ## Pendiente antes de entregar
 
-1. Desplegar en Vercel (Hito 4) y repetir Lighthouse y PageSpeed Insights sobre la **URL pública**.
-2. La **pasada con lector de pantalla**, la prueba en **teléfono real** y el teclado/zoom manuales, con fecha.
-3. Añadir la página «con sesión iniciada» a Lighthouse cuando exista el inicio de sesión.
+1. Desplegar en Vercel y repetir Lighthouse y PageSpeed Insights sobre la **URL pública**, incluida
+   `/historial` con la sesión abierta.
+2. Repetir el **validador de W3C** y las **métricas (INP, peso)** sobre las pantallas nuevas.
+3. La **pasada con lector de pantalla**, la prueba en **teléfono real** y el teclado/zoom manuales, con fecha.
 4. Poder **demostrar todo en vivo** en la sustentación.

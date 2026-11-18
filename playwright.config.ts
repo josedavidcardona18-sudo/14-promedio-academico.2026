@@ -16,6 +16,8 @@ export default defineConfig({
   webServer: {
     command: `npm run build && npm run start -- -p ${PUERTO}`,
     url: `http://localhost:${PUERTO}`,
+    // Las pruebas corren en modo demostración (sin cuentas ni Firebase): una cuenta, datos en memoria.
+    env: { MODO_DEMO: '1' },
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
   },

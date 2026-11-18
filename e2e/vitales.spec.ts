@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
-import { abrir, notaDe, porcentajeDe } from './ayudas';
+import { RESUMEN, abrir, notaDe, porcentajeDe } from './ayudas';
 
 // Mide LCP, CLS e INP reales en el navegador (Lighthouse no mide INP en laboratorio):
 //   VITALES=1 npx playwright test e2e/vitales.spec.ts --project=movil-360
@@ -45,7 +45,7 @@ test('LCP, CLS e INP con la CPU 4× más lenta', async ({ page, context }, info)
     });
   });
 
-  await abrir(page, '/');
+  await abrir(page, RESUMEN);
   await page.getByRole('link', { name: 'Ver y editar notas de Cálculo diferencial' }).click();
   await expect(page.getByRole('region', { name: 'Resultado' })).toBeVisible();
   await notaDe(page, 3).click();

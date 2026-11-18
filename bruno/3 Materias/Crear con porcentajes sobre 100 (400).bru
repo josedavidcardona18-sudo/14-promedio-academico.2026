@@ -1,0 +1,44 @@
+meta {
+  name: Crear con porcentajes sobre 100 (400)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "creditos": 3,
+    "notas": [
+      {
+        "nombre": "A",
+        "valor": 3,
+        "porcentaje": 60
+      },
+      {
+        "nombre": "B",
+        "valor": 3,
+        "porcentaje": 50
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("explica la suma", function () {
+    expect(res.body.detalles[0].mensaje).to.contain("110");
+  });
+}

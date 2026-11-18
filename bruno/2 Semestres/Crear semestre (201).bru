@@ -1,0 +1,35 @@
+meta {
+  name: Crear semestre (201)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/semestres
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "Bruno 2027-1",
+    "meta": 3.5
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.materias: isEmpty
+}
+
+script:post-response {
+  bru.setVar("semestreId", res.body.id);
+}
+
+docs {
+  Guarda el id en la variable `semestreId` para las solicitudes siguientes.
+}

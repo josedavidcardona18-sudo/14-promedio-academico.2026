@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { abrir } from './ayudas';
+import { MATERIA, RESUMEN, SIMULADOR, abrir } from './ayudas';
 
 // Guarda el resultado completo de axe (violaciones, reglas aprobadas y puntos «incompletos» que
 // exigen revisión manual) en calidad/axe:  INFORMES=1 npx playwright test e2e/informe-axe.spec.ts
@@ -9,9 +9,10 @@ test.skip(!process.env.INFORMES, 'solo con INFORMES=1');
 
 const ETIQUETAS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
 const PAGINAS = [
-  { nombre: 'resumen', ruta: '/' },
-  { nombre: 'materia', ruta: '/materias/calculo-diferencial' },
-  { nombre: 'simulador', ruta: '/simulador' },
+  { nombre: 'resumen', ruta: RESUMEN },
+  { nombre: 'materia', ruta: MATERIA },
+  { nombre: 'simulador', ruta: SIMULADOR },
+  { nombre: 'historial', ruta: '/historial' },
 ] as const;
 const TEMAS = [
   { nombre: 'claro', medios: { colorScheme: 'light' } },

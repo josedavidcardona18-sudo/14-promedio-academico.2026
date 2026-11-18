@@ -1,0 +1,583 @@
+openapi: 3.1.0
+info:
+  title: API de la Calculadora de promedio académico
+  version: 1.0.0
+  description: |
+    Semestres, materias y notas de cada estudiante, con el promedio calculado en el servidor.
+
+    **Autenticación.** Todas las rutas de datos exigen una sesión de Firebase Auth:
+    - Navegador: cookie `sesion` (HttpOnly, Secure, SameSite=Lax) que crea `POST /api/auth/sesion`.
+    - Bruno, Postman, curl: `Authorization: Bearer <idToken de Firebase>`.
+
+    La persona sale **siempre** de la sesión verificada; ningún cuerpo ni ruta recibe un `uid`
+    (salvo la ruta de administración). Un semestre ajeno responde `404`, igual que uno inexistente.
+
+    **Escrituras.** `POST`, `PUT` y `DELETE` exigen que `Origin` sea este mismo sitio (defensa contra
+    CSRF) o, sin `Origin`, una cabecera `Authorization: Bearer`.
+
+    **Modo demostración** (`MODO_DEMO=1`): sin cuentas, con una persona fija y datos en memoria.
+    Solo para desarrollo y las pruebas; en producción sin Firebase la API se cierra.
+servers:
+  - url: http://localhost:3000
+    description: Desarrollo local
+  - url: https://REEMPLAZAR-con-la-url-de-vercel.vercel.app
+    description: Producción (Vercel)
+tags:
+  - name: Semestres
+  - name: Materias
+  - name: Cuenta
+  - name: Administración
+security:
+  - cookieSesion: []
+  - bearerFirebase: []
+paths:
+  /api/semestres:
+    get:
+      tags: [Semestres]
+      operationId: listarSemestres
+      summary: Lista los semestres de la cuenta, del más reciente al más antiguo
+      parameters:
+        - $ref: '#/components/parameters/limite'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Una página de semestres con sus materias.
+          headers:
+            X-Request-Id: { $ref: '#/components/headers/XRequestId' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginaDeSemestres' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+    post:
+      tags: [Semestres]
+      operationId: crearSemestre
+      summary: Crea un semestre (máximo 20 por cuenta)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SemestreEntrada' }
+            example: { nombre: '2027-1', meta: 3.5 }
+      responses:
+        '201':
+          description: El semestre creado, sin materias.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Semestre' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+        '413': { $ref: '#/components/responses/CuerpoGrande' }
+        '415': { $ref: '#/components/responses/NoEsJson' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+  /api/semestres/{id}:
+    parameters:
+      - $ref: '#/components/parameters/semestreId'
+    get:
+      tags: [Semestres]
+      operationId: obtenerSemestre
+      summary: Un semestre con sus materias y notas
+      responses:
+        '200':
+          description: El semestre.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Semestre' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    put:
+      tags: [Semestres]
+      operationId: actualizarSemestre
+      summary: Cambia el nombre y la meta (no toca las materias)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SemestreEntrada' }
+      responses:
+        '200':
+          description: El semestre actualizado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Semestre' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '413': { $ref: '#/components/responses/CuerpoGrande' }
+        '415': { $ref: '#/components/responses/NoEsJson' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+    delete:
+      tags: [Semestres]
+      operationId: eliminarSemestre
+      summary: Elimina el semestre y todas sus materias
+      responses:
+        '204': { description: Eliminado. Sin cuerpo. }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+  /api/semestres/{id}/resumen:
+    parameters:
+      - $ref: '#/components/parameters/semestreId'
+    get:
+      tags: [Semestres]
+      operationId: resumenDeSemestre
+      summary: Promedio ponderado por créditos y qué nota necesita cada materia
+      description: |
+        Calculado en el servidor con aritmética en enteros (décimas). `?meta=` prueba otra meta
+        sin cambiar la del semestre.
+      parameters:
+        - name: meta
+          in: query
+          required: false
+          description: Meta de promedio para el cálculo, de 3,0 a 5,0 con un decimal.
+          schema: { type: number, minimum: 3, maximum: 5, multipleOf: 0.1 }
+      responses:
+        '200':
+          description: El resumen.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Resumen' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+  /api/semestres/{id}/materias:
+    parameters:
+      - $ref: '#/components/parameters/semestreId'
+    post:
+      tags: [Materias]
+      operationId: crearMateria
+      summary: Agrega una materia al semestre (máximo 30)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MateriaCreacion' }
+            example: { nombre: Física I, creditos: 3 }
+      responses:
+        '201':
+          description: La materia creada, con su identificador.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Materia' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+        '413': { $ref: '#/components/responses/CuerpoGrande' }
+        '415': { $ref: '#/components/responses/NoEsJson' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+  /api/semestres/{id}/materias/{materiaId}:
+    parameters:
+      - $ref: '#/components/parameters/semestreId'
+      - $ref: '#/components/parameters/materiaId'
+    get:
+      tags: [Materias]
+      operationId: obtenerMateria
+      summary: Una materia con sus notas
+      responses:
+        '200':
+          description: La materia.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Materia' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    put:
+      tags: [Materias]
+      operationId: reemplazarMateria
+      summary: Reemplaza la materia completa (nombre, créditos y notas)
+      description: Las notas son obligatorias; los porcentajes no pueden sumar más de 100 %.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MateriaEntrada' }
+      responses:
+        '200':
+          description: La materia guardada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Materia' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '413': { $ref: '#/components/responses/CuerpoGrande' }
+        '415': { $ref: '#/components/responses/NoEsJson' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+    delete:
+      tags: [Materias]
+      operationId: eliminarMateria
+      summary: Elimina la materia y sus notas
+      responses:
+        '204': { description: Eliminada. Sin cuerpo. }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+  /api/ejemplo:
+    post:
+      tags: [Semestres]
+      operationId: cargarEjemplo
+      summary: Copia el semestre de ejemplo (4 materias) a la cuenta
+      responses:
+        '201':
+          description: El semestre de ejemplo, ya en la cuenta.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Semestre' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+  /api/auth/sesion:
+    post:
+      tags: [Cuenta]
+      operationId: iniciarSesion
+      summary: Cambia el idToken de Firebase por una cookie de sesión
+      description: |
+        El `idToken` debe ser reciente (menos de 5 minutos desde el inicio de sesión). La cookie
+        `sesion` es HttpOnly, Secure (en producción) y SameSite=Lax; dura 5 días.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [idToken]
+              properties:
+                idToken: { type: string, minLength: 20, maxLength: 4096 }
+      responses:
+        '201':
+          description: Sesión creada.
+          headers:
+            Set-Cookie:
+              description: La cookie de sesión.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+    delete:
+      tags: [Cuenta]
+      operationId: cerrarSesion
+      summary: Cierra la sesión (revoca los tokens y borra la cookie)
+      security: []
+      responses:
+        '204': { description: Sesión cerrada (también si no había ninguna). }
+        '403': { $ref: '#/components/responses/OrigenNoPermitido' }
+        '429': { $ref: '#/components/responses/DemasiadasSolicitudes' }
+  /api/auth/yo:
+    get:
+      tags: [Cuenta]
+      operationId: quienSoy
+      summary: La persona de la sesión verificada y su rol
+      responses:
+        '200':
+          description: La persona.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Usuario'
+                  - type: object
+                    properties:
+                      demo: { type: boolean, description: Verdadero en modo demostración. }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+  /api/admin/usuarios/{uid}/semestres:
+    get:
+      tags: [Administración]
+      operationId: semestresDeUnaPersona
+      summary: Semestres de otra persona (solo rol admin)
+      description: El rol sale del *custom claim* `rol` que asigna el Admin SDK. Un estudiante recibe `403`.
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9_-]{1,128}$' }
+        - $ref: '#/components/parameters/limite'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Una página de semestres.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginaDeSemestres' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403':
+          description: La persona no tiene el rol `admin`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: No tienes permiso para hacer esto. }
+components:
+  securitySchemes:
+    cookieSesion:
+      type: apiKey
+      in: cookie
+      name: sesion
+      description: Cookie de sesión de Firebase (HttpOnly). La crea POST /api/auth/sesion.
+    bearerFirebase:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID token
+  headers:
+    XRequestId:
+      description: Identificador de la petición, para buscarla en los registros.
+      schema: { type: string, format: uuid }
+  parameters:
+    semestreId:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    materiaId:
+      name: materiaId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    limite:
+      name: limite
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    cursor:
+      name: cursor
+      in: query
+      required: false
+      description: El `siguienteCursor` de la página anterior.
+      schema: { $ref: '#/components/schemas/Id' }
+  schemas:
+    Id:
+      type: string
+      pattern: '^[a-z0-9][a-z0-9-]{0,39}$'
+      example: calculo-diferencial
+    Nota:
+      type: object
+      additionalProperties: false
+      required: [nombre, valor, porcentaje]
+      properties:
+        nombre: { type: string, minLength: 1, maxLength: 40 }
+        valor:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 5
+          multipleOf: 0.1
+          description: De 0,0 a 5,0 con un decimal. `null` si todavía no hay nota.
+        porcentaje: { type: number, minimum: 0, maximum: 100, multipleOf: 0.1 }
+    MateriaEntrada:
+      type: object
+      additionalProperties: false
+      required: [nombre, creditos, notas]
+      properties:
+        nombre: { type: string, minLength: 1, maxLength: 60 }
+        creditos: { type: integer, minimum: 1, maximum: 20 }
+        notas:
+          type: array
+          maxItems: 12
+          description: Los porcentajes no pueden sumar más de 100 %.
+          items: { $ref: '#/components/schemas/Nota' }
+    MateriaCreacion:
+      type: object
+      additionalProperties: false
+      required: [nombre, creditos]
+      properties:
+        nombre: { type: string, minLength: 1, maxLength: 60 }
+        creditos: { type: integer, minimum: 1, maximum: 20 }
+        notas:
+          type: array
+          maxItems: 12
+          default: []
+          items: { $ref: '#/components/schemas/Nota' }
+    Materia:
+      allOf:
+        - type: object
+          required: [id]
+          properties:
+            id: { $ref: '#/components/schemas/Id' }
+        - $ref: '#/components/schemas/MateriaEntrada'
+    SemestreEntrada:
+      type: object
+      additionalProperties: false
+      required: [nombre, meta]
+      properties:
+        nombre: { type: string, minLength: 1, maxLength: 40 }
+        meta: { type: number, minimum: 3, maximum: 5, multipleOf: 0.1 }
+    Semestre:
+      type: object
+      additionalProperties: false
+      required: [id, creadoEn, nombre, meta, materias]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        creadoEn: { type: string, format: date-time }
+        nombre: { type: string }
+        meta: { type: number }
+        materias:
+          type: array
+          maxItems: 30
+          items: { $ref: '#/components/schemas/Materia' }
+    PaginaDeSemestres:
+      type: object
+      required: [items, siguienteCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Semestre' }
+        siguienteCursor:
+          type: [string, 'null']
+          description: Pásalo como `?cursor=` para pedir la página siguiente; `null` en la última.
+    EstadoMateria:
+      type: string
+      enum: [sin-notas, aprobando, en-riesgo, perdida]
+    ResultadoMateria:
+      type: object
+      properties:
+        acumulado: { type: number }
+        pesoEvaluado: { type: number }
+        pesoPendiente: { type: number }
+        promedioActual: { type: [number, 'null'] }
+        definitiva: { type: [number, 'null'] }
+        estado: { $ref: '#/components/schemas/EstadoMateria' }
+        asegurada: { type: boolean }
+    Simulacion:
+      description: Qué se necesita en lo que falta para llegar a la meta.
+      oneOf:
+        - type: object
+          required: [tipo, definitiva, alcanzada]
+          properties:
+            tipo: { const: completa }
+            definitiva: { type: number }
+            alcanzada: { type: boolean }
+        - type: object
+          required: [tipo]
+          properties:
+            tipo: { const: asegurada }
+        - type: object
+          required: [tipo, requerida, pesoPendiente]
+          properties:
+            tipo: { const: necesaria }
+            requerida:
+              { type: number, description: 'La nota mínima, redondeada hacia arriba a la décima.' }
+            pesoPendiente: { type: number }
+        - type: object
+          required: [tipo, maximoPosible]
+          properties:
+            tipo: { const: imposible }
+            maximoPosible: { type: number }
+    Resumen:
+      type: object
+      properties:
+        semestreId: { $ref: '#/components/schemas/Id' }
+        nombre: { type: string }
+        meta: { type: number }
+        promedio: { type: [number, 'null'], description: Truncado a 2 decimales. }
+        creditosConNotas: { type: integer }
+        creditosTotales: { type: integer }
+        conteo:
+          type: object
+          additionalProperties: { type: integer }
+        materias:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { $ref: '#/components/schemas/Id' }
+              nombre: { type: string }
+              creditos: { type: integer }
+              resultado: { $ref: '#/components/schemas/ResultadoMateria' }
+              simulacion: { $ref: '#/components/schemas/Simulacion' }
+    Usuario:
+      type: object
+      required: [uid, correo, rol]
+      properties:
+        uid: { type: string }
+        correo: { type: [string, 'null'] }
+        rol: { type: string, enum: [estudiante, admin] }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          {
+            type: string,
+            description: 'Mensaje para la persona; un 500 nunca revela detalles internos.',
+          }
+    ErrorDeValidacion:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          required: [detalles]
+          properties:
+            detalles:
+              type: array
+              items:
+                type: object
+                required: [campo, mensaje]
+                properties:
+                  campo: { type: string, example: notas.0.valor }
+                  mensaje: { type: string, example: 'La nota no puede pasar de 5,0.' }
+  responses:
+    PeticionInvalida:
+      description: Datos inválidos (cuerpo, ruta o consulta), con el detalle por campo.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorDeValidacion' }
+          example:
+            error: Datos inválidos.
+            detalles: [{ campo: notas.0.valor, mensaje: 'La nota no puede pasar de 5,0.' }]
+    NoAutenticado:
+      description: Sin sesión, o sesión inválida, vencida o revocada.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Necesitas iniciar sesión. }
+    OrigenNoPermitido:
+      description: La escritura no viene de este sitio (CSRF) o falta `Origin`/`Bearer`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Origen no permitido. }
+    NoEncontrado:
+      description: No existe, o es de otra persona (no se distingue a propósito).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Semestre no encontrado. }
+    Conflicto:
+      description: Se llegó a un límite (20 semestres, 30 materias) o ya existe.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Llegaste al máximo de 20 semestres. }
+    CuerpoGrande:
+      description: El cuerpo pasa de 100 000 caracteres.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NoEsJson:
+      description: El cuerpo no es `application/json`.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    DemasiadasSolicitudes:
+      description: 'Demasiadas escrituras desde la misma IP (60 por minuto; 10 para la sesión).'
+      headers:
+        Retry-After:
+          description: Segundos que hay que esperar.
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

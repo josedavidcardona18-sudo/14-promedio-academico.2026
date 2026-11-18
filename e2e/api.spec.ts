@@ -1,23 +1,31 @@
 import { expect, test } from '@playwright/test';
 
-// La API no depende del ancho de pantalla: se prueba una sola vez.
+// La API no depende del ancho de pantalla: se prueba una sola vez. Corre en modo demostración
+// (MODO_DEMO=1, ver playwright.config.ts): la sesión real se prueba con Firebase, no aquí.
 test.beforeEach(({}, info) => {
   test.skip(info.project.name !== 'escritorio-1024', 'solo se corre en un proyecto');
 });
 
 test.describe('API REST (contra la compilación de producción)', () => {
-  test('GET /api/semestres/ejemplo: 200, JSON, caché pública y cabeceras de seguridad', async ({
+  test('GET /api/semestres/ejemplo: 200, JSON, privado (no-store) y cabeceras de seguridad', async ({
     request,
   }) => {
     const r = await request.get('/api/semestres/ejemplo');
     expect(r.status()).toBe(200);
     expect(r.headers()['content-type']).toContain('application/json');
-    expect(r.headers()['cache-control']).toContain('s-maxage');
+    expect(r.headers()['cache-control']).toBe('no-store');
     expect(r.headers()['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
     expect(r.headers()['x-content-type-options']).toBe('nosniff');
     expect(r.headers()['x-powered-by']).toBeUndefined();
+    expect((await r.json()).materias).toHaveLength(4);
+  });
+
+  test('GET /api/semestres: lista paginada con siguienteCursor', async ({ request }) => {
+    const r = await request.get('/api/semestres?limite=1');
+    expect(r.status()).toBe(200);
     const cuerpo = await r.json();
-    expect(cuerpo.materias).toHaveLength(4);
+    expect(cuerpo.items).toHaveLength(1);
+    expect(cuerpo).toHaveProperty('siguienteCursor');
   });
 
   test('GET /api/semestres/ejemplo/resumen: promedios calculados en el servidor', async ({
@@ -37,11 +45,65 @@ test.describe('API REST (contra la compilación de producción)', () => {
     expect(r.headers()['cache-control']).toBe('no-store');
   });
 
+  test('POST con un cuerpo inválido responde 400 y no crea nada', async ({ request, baseURL }) => {
+    const r = await request.post('/api/semestres', {
+      headers: { origin: baseURL ?? '' },
+      data: { nombre: 'x', meta: 5.5 },
+    });
+    expect(r.status()).toBe(400);
+  });
+
+  test('403: una escritura desde otro origen se rechaza (CSRF), aunque lleve datos válidos', async ({
+    request,
+  }) => {
+    const r = await request.post('/api/semestres', {
+      headers: { origin: 'https://malo.example' },
+      data: { nombre: 'x', meta: 3 },
+    });
+    expect(r.status()).toBe(403);
+    expect(await r.json()).toEqual({ error: 'Origen no permitido.' });
+  });
+
+  test('201, PUT, 204 y 404: ciclo de vida de un semestre', async ({ request, baseURL }) => {
+    const origin = baseURL ?? '';
+    const creado = await request.post('/api/semestres', {
+      headers: { origin },
+      data: { nombre: 'API e2e', meta: 3.5 },
+    });
+    expect(creado.status()).toBe(201);
+    const { id } = await creado.json();
+
+    const editado = await request.put(`/api/semestres/${id}`, {
+      headers: { origin },
+      data: { nombre: 'API e2e editado', meta: 4 },
+    });
+    expect((await editado.json()).nombre).toBe('API e2e editado');
+
+    expect((await request.delete(`/api/semestres/${id}`, { headers: { origin } })).status()).toBe(
+      204,
+    );
+    expect((await request.get(`/api/semestres/${id}`)).status()).toBe(404);
+  });
+
   test('404 para un semestre que no existe, sin caché', async ({ request }) => {
     const r = await request.get('/api/semestres/otro');
     expect(r.status()).toBe(404);
     expect(await r.json()).toEqual({ error: 'Semestre no encontrado.' });
     expect(r.headers()['cache-control']).toBe('no-store');
+  });
+
+  test('403: un estudiante (aquí, el usuario de demostración) no entra a la ruta de administración', async ({
+    request,
+  }) => {
+    const r = await request.get('/api/admin/usuarios/demo/semestres');
+    expect(r.status()).toBe(403);
+  });
+
+  test('GET /api/auth/yo: en modo demostración dice quién es', async ({ request }) => {
+    expect(await (await request.get('/api/auth/yo')).json()).toMatchObject({
+      uid: 'demo',
+      demo: true,
+    });
   });
 
   test('un identificador con caracteres raros se rechaza con 400', async ({ request }) => {

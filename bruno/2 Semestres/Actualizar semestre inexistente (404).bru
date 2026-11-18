@@ -1,0 +1,26 @@
+meta {
+  name: Actualizar semestre inexistente (404)
+  type: http
+  seq: 13
+}
+
+put {
+  url: {{baseUrl}}/api/semestres/no-existe
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "meta": 3
+  }
+}
+
+assert {
+  res.status: eq 404
+}

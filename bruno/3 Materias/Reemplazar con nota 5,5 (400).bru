@@ -1,0 +1,39 @@
+meta {
+  name: Reemplazar con nota 5,5 (400)
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias/{{materiaId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "Física I",
+    "creditos": 3,
+    "notas": [
+      {
+        "nombre": "Final",
+        "valor": 5.5,
+        "porcentaje": 40
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("señala la nota", function () {
+    expect(res.body.detalles[0].campo).to.equal("notas.0.valor");
+  });
+}

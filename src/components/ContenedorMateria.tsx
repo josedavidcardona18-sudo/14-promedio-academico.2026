@@ -14,7 +14,9 @@ function MateriaNoEncontrada({ semestreId }: { semestreId: string }) {
     <div className={ui.tarjeta} role="alert">
       <h2>No encontramos esa materia</h2>
       <p>Puede que la hayas eliminado o que la dirección esté mal escrita.</p>
-      <Link href={enlaceAlResumen(semestreId)}>Volver al resumen</Link>
+      <Link href={enlaceAlResumen(semestreId)} className={ui.volver}>
+        Volver al resumen
+      </Link>
     </div>
   );
 }
@@ -30,7 +32,7 @@ export function ContenedorMateria({ materiaId }: { materiaId: string }) {
         return (
           <>
             <p>
-              <Link href={enlaceAlResumen(semestre.id)}>
+              <Link href={enlaceAlResumen(semestre.id)} className={ui.volver}>
                 ← Volver al resumen de {semestre.nombre}
               </Link>
             </p>

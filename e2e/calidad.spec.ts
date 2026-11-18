@@ -1,9 +1,13 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import {
+  MATERIA,
+  RESUMEN,
   RUTAS,
+  SIMULADOR,
+  cuentaVacia,
+  test,
   abrir,
   alertaDeError,
-  crearBorrador,
   notaDe,
   romperApi,
   sinDesbordeHorizontal,
@@ -37,30 +41,46 @@ for (const tema of TEMAS) {
       await sinViolacionesDeAxe(page);
     });
 
-    test('/ sin materias (vacío): 0 violaciones', async ({ page }) => {
-      await page.addInitScript(() =>
-        window.localStorage.setItem(
-          'promedio-academico:borrador:ejemplo',
-          JSON.stringify({ version: 1, materias: [] }),
-        ),
-      );
+    test('/ sin semestres (vacío): 0 violaciones', async ({ page }) => {
+      await cuentaVacia(page);
       await page.goto('/');
-      await expect(page.getByRole('heading', { name: 'Aún no hay materias' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Aún no tienes semestres' })).toBeVisible();
       await sinViolacionesDeAxe(page);
     });
 
-    test('materia con errores de validación visibles: 0 violaciones', async ({ page }) => {
-      await abrir(page, '/materias/calculo-diferencial');
+    test('/ con la sesión vencida (401): 0 violaciones', async ({ page }) => {
+      await page.route(/\/api\/semestres\?limite=100/, (r) =>
+        r.fulfill({ status: 401, json: { error: 'Necesitas iniciar sesión.' } }),
+      );
+      await page.goto('/');
+      await expect(page.getByRole('heading', { name: 'Tu sesión venció' })).toBeVisible();
+      await sinViolacionesDeAxe(page);
+    });
+
+    test('materia con errores de validación visibles: 0 violaciones', async ({ page, aislado }) => {
+      await abrir(page, aislado.materia);
       await notaDe(page, 3).fill('5.5');
       await expect(page.getByText('La nota no puede pasar de 5,0.')).toBeVisible();
       await sinViolacionesDeAxe(page);
     });
 
-    test('/ con el diálogo de confirmación abierto: 0 violaciones', async ({ page }) => {
-      await crearBorrador(page);
-      await abrir(page, '/');
-      await page.getByRole('button', { name: 'Restablecer datos de ejemplo' }).click();
+    test('/historial con el diálogo de eliminar abierto: 0 violaciones', async ({
+      page,
+      aislado,
+    }) => {
+      await abrir(page, '/historial');
+      await page.getByRole('button', { name: `Eliminar ${aislado.nombre}` }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
+      await sinViolacionesDeAxe(page);
+    });
+
+    test('/historial con un semestre en edición y el formulario de nuevo semestre: 0 violaciones', async ({
+      page,
+      aislado,
+    }) => {
+      await abrir(page, '/historial');
+      await page.getByText('Nuevo semestre').click();
+      await page.getByRole('button', { name: `Editar ${aislado.nombre}` }).click();
       await sinViolacionesDeAxe(page);
     });
   });
@@ -78,7 +98,7 @@ test.describe('responsive', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 640 });
-    for (const ruta of ['/', '/simulador', '/materias/calculo-diferencial']) {
+    for (const ruta of [RESUMEN, SIMULADOR, MATERIA, '/historial']) {
       await abrir(page, ruta);
       await sinDesbordeHorizontal(page);
     }
@@ -88,13 +108,13 @@ test.describe('responsive', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 640, height: 512 });
-    await abrir(page, '/');
+    await abrir(page, RESUMEN);
     await sinDesbordeHorizontal(page);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
   test('objetivos táctiles de al menos 44 × 44 px', async ({ page }) => {
-    for (const ruta of ['/', '/simulador', '/materias/calculo-diferencial']) {
+    for (const ruta of [RESUMEN, SIMULADOR, MATERIA, '/historial']) {
       await abrir(page, ruta);
       const pequenos = await page.evaluate(() => {
         const elementos = document.querySelectorAll(
@@ -114,7 +134,7 @@ test.describe('responsive', () => {
   });
 
   test('todo el texto visible mide al menos 16 px', async ({ page }) => {
-    for (const ruta of ['/', '/simulador', '/materias/calculo-diferencial']) {
+    for (const ruta of [RESUMEN, SIMULADOR, MATERIA, '/historial']) {
       await abrir(page, ruta);
       const chicos = await page.evaluate(() => {
         const textos = Array.from(document.body.querySelectorAll('*')).filter((el) =>
@@ -140,7 +160,7 @@ test.describe('teclado y foco', () => {
   test('el primer Tab llega a «Saltar al contenido» y Enter lleva el foco al contenido', async ({
     page,
   }) => {
-    await abrir(page, '/');
+    await abrir(page, RESUMEN);
     await page.keyboard.press('Tab');
     const saltar = page.getByRole('link', { name: 'Saltar al contenido' });
     await expect(saltar).toBeFocused();
@@ -150,7 +170,7 @@ test.describe('teclado y foco', () => {
   });
 
   test('todo control enfocado con el teclado muestra un contorno visible', async ({ page }) => {
-    await abrir(page, '/materias/calculo-diferencial');
+    await abrir(page, MATERIA);
     await page.locator('body').click({ position: { x: 1, y: 1 } });
     for (let i = 0; i < 30; i++) {
       await page.keyboard.press('Tab');
@@ -172,7 +192,7 @@ test.describe('teclado y foco', () => {
   });
 
   test('el foco no queda tapado por una cabecera fija', async ({ page }) => {
-    await abrir(page, '/');
+    await abrir(page, RESUMEN);
     const imprimir = page.getByRole('button', { name: 'Imprimir resumen' });
     await imprimir.focus();
     await expect(imprimir).toBeInViewport({ ratio: 1 });
@@ -183,7 +203,7 @@ test.describe('impresión y sin errores', () => {
   test('al imprimir se oculta lo que no es resultado y se conservan las materias', async ({
     page,
   }) => {
-    await abrir(page, '/');
+    await abrir(page, RESUMEN);
     await page.emulateMedia({ media: 'print' });
     await expect(page.locator('header').first()).toBeHidden();
     await expect(page.getByRole('button', { name: 'Imprimir resumen' })).toBeHidden();

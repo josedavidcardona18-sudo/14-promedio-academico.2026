@@ -1,0 +1,26 @@
+meta {
+  name: Crear en semestre inexistente (404)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/semestres/no-existe/materias
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "creditos": 3
+  }
+}
+
+assert {
+  res.status: eq 404
+}

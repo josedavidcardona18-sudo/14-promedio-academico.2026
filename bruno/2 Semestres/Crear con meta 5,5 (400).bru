@@ -1,0 +1,32 @@
+meta {
+  name: Crear con meta 5,5 (400)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/semestres
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "meta": 5.5
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("el detalle señala el campo meta", function () {
+    expect(res.body.detalles[0].campo).to.equal("meta");
+  });
+}

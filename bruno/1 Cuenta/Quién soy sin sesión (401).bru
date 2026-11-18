@@ -1,0 +1,20 @@
+meta {
+  name: Quién soy sin sesión (401)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/auth/yo
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+  res.body.error: eq Necesitas iniciar sesión.
+}
+
+docs {
+  Sin token ni cookie. No aplica en modo demostración.
+}

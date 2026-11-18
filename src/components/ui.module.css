@@ -7,6 +7,20 @@
   box-shadow: var(--sombra);
 }
 
+.tarjeta > summary {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.volver {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
+
 .boton {
   appearance: none;
   display: inline-flex;

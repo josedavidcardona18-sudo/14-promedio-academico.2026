@@ -1,0 +1,21 @@
+meta {
+  name: Listar semestres (200)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/semestres?limite=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.items: isArray
+  res.headers.cache-control: eq no-store
+}

@@ -1,0 +1,47 @@
+meta {
+  name: Reemplazar materia (200)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias/{{materiaId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "Física I",
+    "creditos": 3,
+    "notas": [
+      {
+        "nombre": "Parcial 1",
+        "valor": 4,
+        "porcentaje": 30
+      },
+      {
+        "nombre": "Parcial 2",
+        "valor": 3,
+        "porcentaje": 30
+      },
+      {
+        "nombre": "Final",
+        "valor": null,
+        "porcentaje": 40
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Criterio de aceptación 1: con 4,0 y 3,0 al 30 %, el resumen pide 2,3 en el 40 % restante.
+}

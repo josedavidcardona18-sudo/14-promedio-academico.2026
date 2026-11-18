@@ -1,0 +1,24 @@
+meta {
+  name: Administración como estudiante (403)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/admin/usuarios/demo/semestres
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 403
+  res.body.error: eq No tienes permiso para hacer esto.
+}
+
+docs {
+  Un estudiante no puede ver los semestres de otra persona. No aplica en modo demostración.
+}

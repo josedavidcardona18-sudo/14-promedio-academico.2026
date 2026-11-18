@@ -1,0 +1,19 @@
+meta {
+  name: Obtener con id inválido (400)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/..%2Fetc
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 400
+}

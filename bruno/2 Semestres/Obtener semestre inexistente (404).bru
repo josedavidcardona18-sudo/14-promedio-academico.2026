@@ -1,0 +1,20 @@
+meta {
+  name: Obtener semestre inexistente (404)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/no-existe
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 404
+  res.body.error: eq Semestre no encontrado.
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Actualizar con meta 2 (400)
+  type: http
+  seq: 12
+}
+
+put {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "meta": 2
+  }
+}
+
+assert {
+  res.status: eq 400
+}

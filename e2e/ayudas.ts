@@ -1,12 +1,19 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page } from '@playwright/test';
+import { expect, test as base, type Page } from '@playwright/test';
 
 const ETIQUETAS_AXE = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
 
+/** El semestre de ejemplo de la cuenta de demostración: solo se lee, así que es estable. */
+export const RESUMEN = '/?semestre=ejemplo';
+export const SIMULADOR = '/simulador?semestre=ejemplo';
+export const MATERIA = '/materias/calculo-diferencial?semestre=ejemplo';
+
 export const RUTAS = [
-  '/',
-  '/simulador',
-  '/materias/calculo-diferencial',
+  RESUMEN,
+  SIMULADOR,
+  MATERIA,
+  '/historial',
+  '/login',
   '/esta-ruta-no-existe',
 ] as const;
 
@@ -29,12 +36,15 @@ export async function sinDesbordeHorizontal(page: Page): Promise<void> {
 
 /** Espera a que la ruta haya terminado de cargar sus datos (no mide el esqueleto de carga). */
 export async function esperarDatos(page: Page, ruta: string): Promise<void> {
-  if (ruta === '/') {
+  const { pathname } = new URL(ruta, 'http://localhost');
+  if (pathname === '/') {
     await expect(page.getByRole('region', { name: /Resumen de/ })).toBeVisible();
-  } else if (ruta === '/simulador') {
+  } else if (pathname === '/simulador') {
     await expect(page.getByLabel('Materia')).toBeVisible();
-  } else if (ruta.startsWith('/materias/')) {
+  } else if (pathname.startsWith('/materias/')) {
     await expect(page.getByRole('region', { name: 'Resultado' })).toBeVisible();
+  } else if (pathname === '/historial') {
+    await expect(page.getByRole('heading', { name: 'Promedio por semestre' })).toBeVisible();
   } else {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   }
@@ -51,18 +61,19 @@ export const notaDe = (page: Page, n: number) =>
 export const porcentajeDe = (page: Page, n: number) =>
   page.getByRole('group', { name: `Nota ${n}` }).getByLabel('Porcentaje (%)');
 
-/** Edita la nota 3 de Cálculo (queda como borrador en localStorage). */
-export async function crearBorrador(page: Page): Promise<void> {
-  await abrir(page, '/materias/calculo-diferencial');
-  await notaDe(page, 3).fill('5');
-  await expect(page.getByText('Cambios guardados como borrador')).toBeVisible();
+const URL_LISTA = /\/api\/semestres\?limite=100/;
+
+/** Simula una caída de la API: la lista responde 500 hasta que se llame a `restaurar`. */
+export async function romperApi(page: Page): Promise<() => Promise<void>> {
+  await page.route(URL_LISTA, (r) => r.fulfill({ status: 500, json: { error: 'Error interno.' } }));
+  return () => page.unroute(URL_LISTA);
 }
 
-/** Simula una caída de la API: la respuesta es un 500 hasta que se llame a `restaurar`. */
-export async function romperApi(page: Page): Promise<() => Promise<void>> {
-  const patron = '**/api/semestres/ejemplo';
-  await page.route(patron, (r) => r.fulfill({ status: 500, json: { error: 'Error interno.' } }));
-  return () => page.unroute(patron);
+/** Simula una cuenta sin semestres (la de demostración es una sola y la comparten las pruebas). */
+export async function cuentaVacia(page: Page): Promise<void> {
+  await page.route(URL_LISTA, (r) =>
+    r.fulfill({ status: 200, json: { items: [], siguienteCursor: null } }),
+  );
 }
 
 /**
@@ -71,3 +82,48 @@ export async function romperApi(page: Page): Promise<() => Promise<void>> {
  */
 export const alertaDeError = (page: Page) =>
   page.getByRole('alert').filter({ hasText: 'No pudimos cargar tus datos' });
+
+export interface Aislado {
+  /** Id del semestre propio de la prueba (la cuenta de demostración la comparten todas). */
+  id: string;
+  nombre: string;
+  materiaId: string;
+  resumen: string;
+  materia: string;
+}
+
+/**
+ * Semestre propio para las pruebas que modifican datos: las tres anchuras corren a la vez contra
+ * el mismo servidor, así que nadie toca `ejemplo`. Se crea con la API real y se borra al terminar.
+ */
+export const test = base.extend<{ aislado: Aislado }>({
+  aislado: async ({ request, baseURL }, usar) => {
+    const cabeceras = { origin: baseURL ?? '' };
+    const nombre = `E2E ${Math.random().toString(36).slice(2, 8)}`;
+    const semestre = await (
+      await request.post('/api/semestres', { headers: cabeceras, data: { nombre, meta: 3 } })
+    ).json();
+    const materia = await (
+      await request.post(`/api/semestres/${semestre.id}/materias`, {
+        headers: cabeceras,
+        data: {
+          nombre: 'Cálculo diferencial',
+          creditos: 4,
+          notas: [
+            { nombre: 'Primer corte', valor: 3.5, porcentaje: 30 },
+            { nombre: 'Segundo corte', valor: 2.8, porcentaje: 30 },
+            { nombre: 'Tercer corte', valor: null, porcentaje: 40 },
+          ],
+        },
+      })
+    ).json();
+    await usar({
+      id: semestre.id,
+      nombre,
+      materiaId: materia.id,
+      resumen: `/?semestre=${semestre.id}`,
+      materia: `/materias/${materia.id}?semestre=${semestre.id}`,
+    });
+    await request.delete(`/api/semestres/${semestre.id}`, { headers: cabeceras });
+  },
+});
