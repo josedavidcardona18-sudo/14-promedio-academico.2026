@@ -29,6 +29,12 @@
   border-block-end: 0;
 }
 
+.secundario {
+  display: block;
+  color: var(--suave);
+  font-weight: 400;
+}
+
 .numero {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -49,4 +55,16 @@
 
 .sinDato {
   color: var(--suave);
+}
+
+/* En móvil la tabla debe caber entera (sin desplazarla): menos relleno y «Cambio» puede partirse. */
+@media (max-width: 47.99rem) {
+  .tabla th,
+  .tabla td {
+    padding: 0.5rem 0.375rem;
+  }
+
+  .cambio {
+    white-space: normal;
+  }
 }

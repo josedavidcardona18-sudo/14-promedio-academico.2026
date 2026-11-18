@@ -1,14 +1,51 @@
-.lista {
+.nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
+  align-items: center;
+}
+
+/* Móvil: el botón abre una lista que se superpone al contenido (no empuja nada: sin saltos de diseño). */
+.boton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 0.625rem;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.boton:hover {
+  background: var(--superficie-2);
+}
+
+.lista {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 100%;
+  z-index: 10;
+  display: none;
   margin: 0;
-  padding: 0;
+  padding: 0.5rem max(1rem, env(safe-area-inset-right)) 0.75rem max(1rem, env(safe-area-inset-left));
   list-style: none;
+  background: var(--superficie);
+  border-block-end: 1px solid var(--borde);
+  box-shadow: var(--sombra);
+}
+
+.lista[data-abierto='true'] {
+  display: grid;
+  gap: 0.25rem;
 }
 
 .enlace {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   min-block-size: 2.75rem;
   padding-inline: 0.75rem;
@@ -27,4 +64,33 @@
   text-decoration: underline;
   text-decoration-thickness: 3px;
   text-underline-offset: 0.35em;
+}
+
+/* Tableta y escritorio: los enlaces se ven siempre, en fila, y el botón desaparece. */
+@media (min-width: 48rem) {
+  .boton {
+    display: none;
+  }
+
+  .lista,
+  .lista[data-abierto] {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .enlace {
+    display: inline-flex;
+  }
+}
+
+@media (forced-colors: active) {
+  .lista {
+    border: 1px solid CanvasText;
+  }
 }

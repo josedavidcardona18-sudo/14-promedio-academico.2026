@@ -1,6 +1,7 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { claveDeBorrador } from '@/storage/borrador';
 import { ContenedorMateria } from './ContenedorMateria';
 import { ContenedorSimulador } from './ContenedorSimulador';
 import { instalarServidorFalso, navegacion, reiniciarNavegacion } from './pruebas-de-datos';
@@ -153,10 +154,59 @@ describe('ContenedorMateria', () => {
     await user.click(within(dialogo).getByRole('button', { name: 'Sí, eliminar' }));
 
     expect(navegacion.replace).toHaveBeenCalledWith('/?semestre=ejemplo');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Materia eliminada. Volviendo al resumen…',
+    );
+    expect(
+      screen.queryByRole('heading', { name: 'No encontramos esa materia' }),
+    ).not.toBeInTheDocument();
     const { GET } = await import('@/app/api/semestres/[id]/materias/[materiaId]/route');
     const r = await GET(new Request('http://localhost/api/semestres/ejemplo/materias/ingles-ii'), {
       params: Promise.resolve({ id: 'ejemplo', materiaId: 'ingles-ii' }),
     });
     expect(r.status).toBe(404);
+  });
+
+  it('al eliminar también se borra su borrador local', async () => {
+    const user = userEvent.setup();
+    await instalarServidorFalso();
+    reiniciarNavegacion('/materias/ingles-ii', 'semestre=ejemplo');
+    window.localStorage.setItem(claveDeBorrador('ejemplo', 'ingles-ii'), '{"viejo":true}');
+    render(<ContenedorMateria materiaId="ingles-ii" />);
+    await screen.findByRole('heading', { name: /Inglés II/ });
+    await user.click(screen.getByRole('button', { name: 'Eliminar materia' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: '¿Eliminar Inglés II?' })).getByRole('button', {
+        name: 'Sí, eliminar',
+      }),
+    );
+    await waitFor(() => expect(navegacion.replace).toHaveBeenCalled());
+    expect(window.localStorage.getItem(claveDeBorrador('ejemplo', 'ingles-ii'))).toBeNull();
+  });
+
+  it('si el servidor falla al eliminar, la materia sigue y se muestra el error (sin «No encontramos»)', async () => {
+    const user = userEvent.setup();
+    await instalarServidorFalso();
+    reiniciarNavegacion('/materias/ingles-ii', 'semestre=ejemplo');
+    render(<ContenedorMateria materiaId="ingles-ii" />);
+    await screen.findByRole('heading', { name: /Inglés II/ });
+    const original = vi.mocked(fetch).getMockImplementation();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (entrada: RequestInfo | URL, init?: RequestInit) =>
+        init?.method === 'DELETE'
+          ? new Response(JSON.stringify({ error: 'Error interno.' }), { status: 500 })
+          : original?.(entrada, init),
+      ),
+    );
+    await user.click(screen.getByRole('button', { name: 'Eliminar materia' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: '¿Eliminar Inglés II?' })).getByRole('button', {
+        name: 'Sí, eliminar',
+      }),
+    );
+    expect(await screen.findByText(/El servidor no pudo completar la acción/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Inglés II/ })).toBeInTheDocument();
+    expect(navegacion.replace).not.toHaveBeenCalled();
   });
 });

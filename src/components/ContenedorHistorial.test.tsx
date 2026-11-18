@@ -45,8 +45,10 @@ describe('ContenedorHistorial · tabla y comparación', () => {
     const [reciente, antiguo] = filas();
     if (!reciente || !antiguo) throw new Error('faltan filas');
     expect(within(reciente).getByRole('rowheader')).toHaveTextContent('2027-1');
-    expect(celdas(reciente)).toEqual(['4,0', '▲ Sube 0,63', '3']);
-    expect(celdas(antiguo)).toEqual(['3,37', '—', '12']);
+    expect(within(reciente).getByRole('rowheader')).toHaveTextContent('3 créditos');
+    expect(celdas(reciente)).toEqual(['4,0', '▲ Sube 0,63']);
+    expect(within(antiguo).getByRole('rowheader')).toHaveTextContent('12 créditos');
+    expect(celdas(antiguo)).toEqual(['3,37', '—']);
   });
 
   it('la tabla tiene encabezados de columna y una región con nombre para quien la desplaza', async () => {
@@ -55,7 +57,6 @@ describe('ContenedorHistorial · tabla y comparación', () => {
       'Semestre',
       'Promedio',
       'Cambio',
-      'Créditos',
     ]);
     expect(screen.getByRole('region', { name: 'Tabla de promedios por semestre' })).toHaveAttribute(
       'tabindex',

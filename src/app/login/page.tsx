@@ -9,8 +9,7 @@ import ui from '@/components/ui.module.css';
 export const metadata: Metadata = {
   title: 'Iniciar sesión',
   description: 'Entra a tu cuenta para ver y editar tus semestres, materias y notas.',
-  // Una página de acceso no tiene nada que ofrecer en un buscador.
-  robots: { index: false, follow: false },
+  alternates: { canonical: '/login' },
 };
 
 export default async function Login({

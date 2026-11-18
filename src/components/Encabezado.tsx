@@ -7,7 +7,7 @@ export function Encabezado() {
   return (
     <header className={`${estilos.encabezado} no-imprimir`}>
       <div className={estilos.interior}>
-        <Link href="/" className={estilos.marca}>
+        <Link href="/" className={estilos.marca} prefetch={false}>
           <span className={estilos.logo} aria-hidden="true">
             ✓
           </span>

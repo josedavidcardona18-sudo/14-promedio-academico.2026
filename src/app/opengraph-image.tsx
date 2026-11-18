@@ -24,7 +24,7 @@ export default function ImagenSocial() {
         ¿Qué nota necesito para aprobar?
       </div>
       <div style={{ fontSize: 36, marginTop: 32, opacity: 0.9 }}>
-        Materias, cortes y promedio ponderado. Sin cuenta.
+        Materias, cortes y promedio ponderado. Tus datos, solo tuyos.
       </div>
     </div>,
     size,

@@ -5,26 +5,35 @@
   min-block-size: 2.75rem;
 }
 
-/* A partir de tableta cabe junto a la navegación: se le reserva también el ancho. */
-@media (min-width: 48rem) {
+/* Solo en escritorio cabe junto a la navegación (con el ancho de un correo y el botón reservado);
+   antes ocupa su propia fila, siempre, para que la cabecera no cambie de alto al cargar. */
+@media (min-width: 64rem) {
   .espacio {
     flex: 0 0 auto;
     justify-content: flex-end;
-    min-inline-size: 12rem;
+    min-inline-size: 22rem;
   }
 }
 
 .cuenta {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  min-inline-size: 0;
   margin: 0;
 }
 
+/* Un correo largo se recorta con puntos suspensivos en vez de partir la fila en dos: el espacio
+   reservado en la cabecera es de una sola línea y no debe crecer al llegar la respuesta. */
 .correo {
-  max-inline-size: 14rem;
+  flex: 0 1 auto;
+  min-inline-size: 0;
+  max-inline-size: 12rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cuenta button {
+  flex: none;
 }

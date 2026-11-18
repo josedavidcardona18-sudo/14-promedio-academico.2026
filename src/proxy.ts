@@ -16,5 +16,7 @@ export function proxy(peticion: NextRequest): NextResponse {
 
 export const config = {
   // Páginas privadas. Quedan fuera la API (responde 401 por sí misma), /login y los archivos públicos.
-  matcher: ['/((?!api|login|_next|icon\\.svg|robots\\.txt|sitemap\\.xml|opengraph-image).*)'],
+  matcher: [
+    '/((?!api|login|_next|favicon\\.ico|icon\\.svg|robots\\.txt|sitemap\\.xml|opengraph-image).*)',
+  ],
 };

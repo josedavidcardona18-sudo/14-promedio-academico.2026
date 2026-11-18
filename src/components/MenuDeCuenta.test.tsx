@@ -36,7 +36,10 @@ describe('MenuDeCuenta', () => {
       init?.method === 'DELETE'
         ? new Response(null, { status: 204 })
         : new Response(
-            JSON.stringify({ uid: 'ana', correo: 'ana@correo.co', rol: 'estudiante', demo: false }),
+            JSON.stringify({
+              usuario: { uid: 'ana', correo: 'ana@correo.co', rol: 'estudiante' },
+              demo: false,
+            }),
           ),
     );
     vi.stubGlobal('fetch', fetchFalso);
@@ -50,6 +53,16 @@ describe('MenuDeCuenta', () => {
       expect.objectContaining({ method: 'DELETE' }),
     );
     expect(navegacion.refresh).toHaveBeenCalled();
+  });
+
+  it('en /login no pregunta quién es (no hay sesión que consultar ni un 401 de más en la consola)', async () => {
+    reiniciarNavegacion('/login');
+    const fetchFalso = vi.fn();
+    vi.stubGlobal('fetch', fetchFalso);
+    render(<MenuDeCuenta />);
+    await Promise.resolve();
+    expect(fetchFalso).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('sin sesión (401) no muestra nada', async () => {

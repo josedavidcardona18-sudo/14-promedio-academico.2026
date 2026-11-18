@@ -39,6 +39,7 @@ describe('proxy', () => {
       '/login',
       '/_next/static/a.js',
       '/icon.svg',
+      '/favicon.ico',
       '/robots.txt',
     ]) {
       expect(patron.test(ruta), ruta).toBe(false);

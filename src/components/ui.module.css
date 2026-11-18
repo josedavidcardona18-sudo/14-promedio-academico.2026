@@ -15,6 +15,12 @@
   cursor: pointer;
 }
 
+.apilado {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+}
+
 .volver {
   display: inline-flex;
   align-items: center;

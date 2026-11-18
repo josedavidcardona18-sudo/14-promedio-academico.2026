@@ -38,6 +38,7 @@ export function TarjetaResumen({
         <span>{mensaje.texto}</span>
       </p>
       <Link
+        prefetch={false}
         href={`/materias/${materia.id}?semestre=${encodeURIComponent(semestreId)}`}
         className={`${ui.boton} ${estilos.enlace} no-imprimir`}
       >

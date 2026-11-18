@@ -41,13 +41,17 @@ export function TablaHistorial({ semestres }: { semestres: readonly SemestreConM
             <th scope="col">Semestre</th>
             <th scope="col">Promedio</th>
             <th scope="col">Cambio</th>
-            <th scope="col">Créditos</th>
           </tr>
         </thead>
         <tbody>
           {filas.map(({ semestre, resumen }, i) => (
             <tr key={semestre.id}>
-              <th scope="row">{semestre.nombre}</th>
+              <th scope="row">
+                {semestre.nombre}{' '}
+                <span className={estilos.secundario}>
+                  {resumen.creditosTotales} {resumen.creditosTotales === 1 ? 'crédito' : 'créditos'}
+                </span>
+              </th>
               <td className={estilos.numero}>
                 {resumen.promedio === null ? '—' : formatearNota(resumen.promedio)}
               </td>
@@ -59,7 +63,6 @@ export function TablaHistorial({ semestres }: { semestres: readonly SemestreConM
                   )}
                 />
               </td>
-              <td className={estilos.numero}>{resumen.creditosTotales}</td>
             </tr>
           ))}
         </tbody>

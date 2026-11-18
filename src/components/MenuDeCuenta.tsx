@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUsuario } from '@/hooks/useUsuario';
 import { cerrarSesion, type UsuarioActual } from '@/lib/api-cliente';
 import ui from './ui.module.css';
@@ -18,7 +18,9 @@ function Contenido({ usuario }: { usuario: UsuarioActual | null }) {
   }
   return (
     <div className={`${estilos.cuenta} no-imprimir`}>
-      <span className={estilos.correo}>{usuario.correo ?? usuario.uid}</span>
+      <span className={estilos.correo} title={usuario.correo ?? usuario.uid}>
+        {usuario.correo ?? usuario.uid}
+      </span>
       <button
         type="button"
         className={ui.boton}
@@ -40,7 +42,7 @@ function Contenido({ usuario }: { usuario: UsuarioActual | null }) {
  * y empujaría toda la página (CLS).
  */
 export function MenuDeCuenta() {
-  const { usuario } = useUsuario();
+  const { usuario } = useUsuario(usePathname() !== '/login');
   return (
     <div className={estilos.espacio}>
       <Contenido usuario={usuario} />
