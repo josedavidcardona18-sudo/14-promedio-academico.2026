@@ -20,7 +20,7 @@ info:
 servers:
   - url: http://localhost:3000
     description: Desarrollo local
-  - url: https://REEMPLAZAR-con-la-url-de-vercel.vercel.app
+  - url: https://14-promedio-academico2026.vercel.app
     description: Producción (Vercel)
 tags:
   - name: Semestres
