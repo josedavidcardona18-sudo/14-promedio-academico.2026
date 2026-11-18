@@ -4,8 +4,11 @@ import { json, manejar } from '@/lib/http';
 
 export const runtime = 'nodejs';
 
-/** Quién soy según la sesión verificada. La interfaz lo usa para saludar y saber si es modo demostración. */
+/**
+ * Quién soy según la sesión verificada: `{ usuario: { uid, correo, rol } }` o `401`. `demo` avisa a
+ * la interfaz de que no hay cuentas reales (modo demostración).
+ */
 export const GET = manejar(async (peticion) => {
   const usuario = await requerirUsuario(peticion);
-  return json({ ...usuario, demo: modoDemo() });
+  return json({ usuario, demo: modoDemo() });
 });

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { pedir } from '@/app/api/pruebas-api';
+import { LIMITE_SESION } from '@/lib/constantes';
 import { reiniciarLimites } from '@/lib/limite';
 import { DELETE, POST } from './route';
 
@@ -23,7 +24,7 @@ beforeEach(() => {
 });
 
 describe('POST /api/auth/sesion', () => {
-  it('201: entrega la cookie de sesión HttpOnly y la persona, y nunca el token', async () => {
+  it('204: entrega la cookie de sesión HttpOnly, sin cuerpo, y nunca el token', async () => {
     auth.verifyIdToken.mockResolvedValue({
       uid: 'ana',
       email: 'a@c.co',
@@ -31,14 +32,23 @@ describe('POST /api/auth/sesion', () => {
     });
     auth.createSessionCookie.mockResolvedValue('valor-de-la-cookie');
     const r = await iniciar({ idToken: TOKEN });
-    expect(r.status).toBe(201);
-    expect(await r.json()).toEqual({ uid: 'ana', correo: 'a@c.co', rol: 'estudiante' });
+    expect(r.status).toBe(204);
+    expect(await r.text()).toBe('');
     const cookie = r.headers.get('set-cookie') ?? '';
     expect(cookie).toContain('sesion=valor-de-la-cookie');
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('SameSite=Lax');
+    expect(cookie).toContain('Path=/');
+    expect(cookie).toContain('Max-Age=432000');
     expect(cookie).not.toContain(TOKEN);
     expect(r.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('la cookie lleva Secure en producción', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    auth.verifyIdToken.mockResolvedValue({ uid: 'ana', auth_time: Date.now() / 1000 });
+    auth.createSessionCookie.mockResolvedValue('c');
+    expect((await iniciar({ idToken: TOKEN })).headers.get('set-cookie')).toContain('Secure');
   });
 
   it('401: token inválido, y no se crea ninguna cookie', async () => {
@@ -60,20 +70,22 @@ describe('POST /api/auth/sesion', () => {
     );
   });
 
-  it('429 con Retry-After al pasar de 10 intentos por minuto', async () => {
+  it('429 con Retry-After al pasar del límite de intentos por minuto', async () => {
     auth.verifyIdToken.mockRejectedValue(new Error('x'));
     let ultimo = await iniciar({ idToken: TOKEN }, { ip: '8.8.8.8' });
-    for (let i = 0; i < 10; i++) ultimo = await iniciar({ idToken: TOKEN }, { ip: '8.8.8.8' });
+    for (let i = 0; i < LIMITE_SESION.maximo; i++) {
+      ultimo = await iniciar({ idToken: TOKEN }, { ip: '8.8.8.8' });
+    }
     expect(ultimo.status).toBe(429);
     expect(Number(ultimo.headers.get('retry-after'))).toBeGreaterThan(0);
   });
 
-  it('en modo demostración no pide token ni crea cookie', async () => {
+  it('en modo demostración no pide token ni crea cookie: 204 sin Set-Cookie', async () => {
     vi.stubEnv('MODO_DEMO', '1');
     const r = await iniciar({});
-    expect(r.status).toBe(200);
-    expect(await r.json()).toMatchObject({ uid: 'demo', demo: true });
+    expect(r.status).toBe(204);
     expect(r.headers.get('set-cookie')).toBeNull();
+    expect(auth.verifyIdToken).not.toHaveBeenCalled();
   });
 });
 

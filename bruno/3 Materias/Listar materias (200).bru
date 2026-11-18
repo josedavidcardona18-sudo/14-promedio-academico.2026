@@ -1,0 +1,25 @@
+meta {
+  name: Listar materias (200)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias?limite=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.items: isArray
+  res.body.siguienteCursor: isDefined
+}
+
+docs {
+  Paginación por cursor: `?limite=20&cursor=<id>`.
+}

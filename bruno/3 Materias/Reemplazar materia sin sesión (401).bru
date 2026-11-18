@@ -1,0 +1,23 @@
+meta {
+  name: Reemplazar materia sin sesión (401)
+  type: http
+  seq: 16
+}
+
+put {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias/{{materiaId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "creditos": 3,
+    "notas": []
+  }
+}
+
+assert {
+  res.status: eq 401
+}

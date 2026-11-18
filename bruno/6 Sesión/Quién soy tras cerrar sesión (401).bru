@@ -1,0 +1,19 @@
+meta {
+  name: Quién soy tras cerrar sesión (401)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/auth/yo
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}
+
+docs {
+  La cookie se borró y los tokens quedaron revocados: la sesión ya no sirve.
+}

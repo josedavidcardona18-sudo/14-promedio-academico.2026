@@ -146,15 +146,25 @@ describe('operaciones de escritura', () => {
 });
 
 describe('sesión', () => {
-  it('pedirUsuario valida la forma de la respuesta', async () => {
-    responder({ uid: 'ana', correo: 'ana@correo.co', rol: 'estudiante', demo: false });
-    expect(await pedirUsuario()).toMatchObject({ uid: 'ana', demo: false });
-    responder({ uid: 'ana', rol: 'jefe' });
+  it('pedirUsuario lee { usuario } y valida la forma de la respuesta', async () => {
+    responder({
+      usuario: { uid: 'ana', correo: 'ana@correo.co', rol: 'estudiante' },
+      demo: false,
+    });
+    expect(await pedirUsuario()).toEqual({
+      uid: 'ana',
+      correo: 'ana@correo.co',
+      rol: 'estudiante',
+      demo: false,
+    });
+    responder({ uid: 'ana', correo: null, rol: 'estudiante', demo: false });
+    await expect(pedirUsuario()).rejects.toThrow('formato esperado');
+    responder({ usuario: { uid: 'ana', correo: null, rol: 'jefe' }, demo: false });
     await expect(pedirUsuario()).rejects.toThrow('formato esperado');
   });
 
-  it('abrirSesion envía el token; cerrarSesion usa DELETE', async () => {
-    responder({ uid: 'ana' }, 201);
+  it('abrirSesion envía el token y espera 204; cerrarSesion usa DELETE', async () => {
+    responder(null, 204);
     await abrirSesion('token');
     expect(llamada().init).toMatchObject({ method: 'POST', body: '{"idToken":"token"}' });
     responder(null, 204);

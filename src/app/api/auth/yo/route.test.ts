@@ -17,12 +17,10 @@ beforeEach(() => {
 describe('GET /api/auth/yo', () => {
   it('200: la persona de la sesión, con su rol', async () => {
     expect(await (await yo()).json()).toEqual({
-      uid: 'ana',
-      correo: 'ana@correo.co',
-      rol: 'estudiante',
+      usuario: { uid: 'ana', correo: 'ana@correo.co', rol: 'estudiante' },
       demo: false,
     });
-    expect((await (await yo({ uid: 'root' })).json()).rol).toBe('admin');
+    expect((await (await yo({ uid: 'root' })).json()).usuario.rol).toBe('admin');
   });
 
   it('401 sin sesión, con sesión inválida o con Bearer inválido', async () => {
@@ -32,11 +30,14 @@ describe('GET /api/auth/yo', () => {
   });
 
   it('200 con Bearer válido (Bruno, Postman)', async () => {
-    expect((await (await yo({ uid: null, bearer: 'beto' })).json()).uid).toBe('beto');
+    expect((await (await yo({ uid: null, bearer: 'beto' })).json()).usuario.uid).toBe('beto');
   });
 
   it('en modo demostración responde con la persona de demostración', async () => {
     vi.stubEnv('MODO_DEMO', '1');
-    expect(await (await yo({ uid: null })).json()).toMatchObject({ uid: 'demo', demo: true });
+    expect(await (await yo({ uid: null })).json()).toMatchObject({
+      usuario: { uid: 'demo' },
+      demo: true,
+    });
   });
 });

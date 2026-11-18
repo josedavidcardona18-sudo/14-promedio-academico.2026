@@ -11,7 +11,7 @@ vi.mock('@/repositories', async () => (await import('@/app/api/pruebas-api')).mo
 beforeEach(reiniciarEntorno);
 import { LIMITES } from '@/schemas/semestre';
 import { materiaValida } from '@/app/api/pruebas-api';
-import { POST } from './route';
+import { GET, POST } from './route';
 
 const crear = (id: string, cuerpo: unknown, opciones: Parameters<typeof pedir>[1] = {}) =>
   POST(pedir(`/api/semestres/${id}/materias`, { metodo: 'POST', cuerpo, ...opciones }), {
@@ -62,5 +62,48 @@ describe('POST /api/semestres/:id/materias', () => {
     const r = await crear('ejemplo', materiaValida);
     expect(r.status).toBe(409);
     expect((await r.json()).error).toContain('máximo');
+  });
+});
+
+describe('GET /api/semestres/:id/materias', () => {
+  const listar = (id: string, consulta = '', opciones: Parameters<typeof pedir>[1] = {}) =>
+    GET(pedir(`/api/semestres/${id}/materias${consulta}`, opciones), {
+      params: Promise.resolve({ id }),
+    });
+
+  it('200: las materias del semestre, de la más antigua a la más reciente, sin siguienteCursor', async () => {
+    const r = await listar('ejemplo');
+    const cuerpo = await r.json();
+    expect(r.status).toBe(200);
+    expect(cuerpo.items.map((m: { id: string }) => m.id)).toEqual([
+      'calculo-diferencial',
+      'programacion-web',
+      'algebra-lineal',
+      'ingles-ii',
+    ]);
+    expect(cuerpo.siguienteCursor).toBeNull();
+  });
+
+  it('pagina con limite y cursor sin repetir ni perder materias', async () => {
+    const primera = await (await listar('ejemplo', '?limite=3')).json();
+    expect(primera.items).toHaveLength(3);
+    expect(primera.siguienteCursor).toBe('algebra-lineal');
+    const segunda = await (
+      await listar('ejemplo', `?limite=3&cursor=${primera.siguienteCursor}`)
+    ).json();
+    expect(segunda.items.map((m: { id: string }) => m.id)).toEqual(['ingles-ii']);
+    expect(segunda.siguienteCursor).toBeNull();
+  });
+
+  it('400: límite o cursor inválidos; 404: semestre ajeno o inexistente; 401: sin sesión', async () => {
+    expect((await listar('ejemplo', '?limite=101')).status).toBe(400);
+    const cursor = await listar('ejemplo', '?cursor=no-existe');
+    expect(cursor.status).toBe(400);
+    expect((await cursor.json()).detalles).toEqual([
+      { campo: 'cursor', mensaje: 'Cursor inválido.' },
+    ]);
+    expect((await listar('ejemplo', '', { uid: 'beto' })).status).toBe(404);
+    expect((await listar('nada')).status).toBe(404);
+    expect((await listar('ejemplo', '', { uid: null })).status).toBe(401);
   });
 });

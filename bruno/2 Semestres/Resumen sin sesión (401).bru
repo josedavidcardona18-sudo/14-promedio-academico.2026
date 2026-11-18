@@ -1,0 +1,15 @@
+meta {
+  name: Resumen sin sesión (401)
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/resumen
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}

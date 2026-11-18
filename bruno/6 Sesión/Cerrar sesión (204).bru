@@ -1,0 +1,25 @@
+meta {
+  name: Cerrar sesión (204)
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/api/auth/sesion
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("borra la cookie", function () {
+    expect(String(res.headers["set-cookie"])).to.contain("Max-Age=0");
+  });
+}
+
+docs {
+  Revoca los tokens de la persona y borra la cookie. Es idempotente. **Ojo:** el `idToken` que estabas usando también queda revocado; para seguir probando, obtén uno nuevo.
+}

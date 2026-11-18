@@ -1,0 +1,22 @@
+meta {
+  name: Actualizar sin sesión (401)
+  type: http
+  seq: 18
+}
+
+put {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "meta": 3
+  }
+}
+
+assert {
+  res.status: eq 401
+}

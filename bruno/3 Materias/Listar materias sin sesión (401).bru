@@ -1,0 +1,15 @@
+meta {
+  name: Listar materias sin sesión (401)
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 401
+}

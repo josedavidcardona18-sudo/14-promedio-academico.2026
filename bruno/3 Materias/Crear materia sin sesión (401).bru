@@ -1,0 +1,22 @@
+meta {
+  name: Crear materia sin sesión (401)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/api/semestres/{{semestreId}}/materias
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "x",
+    "creditos": 3
+  }
+}
+
+assert {
+  res.status: eq 401
+}

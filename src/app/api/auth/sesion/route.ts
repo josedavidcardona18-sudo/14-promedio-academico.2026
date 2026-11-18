@@ -1,19 +1,23 @@
-import { leerCookie, NOMBRE_COOKIE, DURACION_SESION_MS, USUARIO_DEMO } from '@/lib/auth';
+import { leerCookie, NOMBRE_COOKIE, DURACION_SESION_MS } from '@/lib/auth';
 import { modoDemo } from '@/lib/config';
 import { LIMITE_SESION } from '@/lib/constantes';
-import { json, leerCuerpo, manejar, sinContenido } from '@/lib/http';
+import { leerCuerpo, manejar, sinContenido } from '@/lib/http';
 import { cabeceraDeCookie, crearSesion, revocarSesion } from '@/lib/sesion';
 import { cuerpoSesionSchema } from '@/schemas/semestre';
 
 export const runtime = 'nodejs';
 
-/** Cambia el `idToken` de Firebase (recién emitido en el navegador) por una cookie de sesión HttpOnly. */
+/**
+ * Cambia el `idToken` de Firebase (recién emitido en el navegador) por una cookie de sesión
+ * HttpOnly. Responde `204` sin cuerpo: la cookie es lo único que se entrega. En modo demostración
+ * no hay cuentas: también `204`, pero sin cookie.
+ */
 export const POST = manejar(
   async (peticion) => {
-    if (modoDemo()) return json({ ...USUARIO_DEMO, demo: true });
+    const respuesta = sinContenido();
+    if (modoDemo()) return respuesta;
     const { idToken } = await leerCuerpo(peticion, cuerpoSesionSchema);
-    const { cookie, usuario } = await crearSesion(idToken);
-    const respuesta = json(usuario, { status: 201 });
+    const { cookie } = await crearSesion(idToken);
     respuesta.headers.append(
       'Set-Cookie',
       cabeceraDeCookie(cookie, Math.floor(DURACION_SESION_MS / 1000)),

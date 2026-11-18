@@ -1,0 +1,34 @@
+meta {
+  name: Registro de sesión (204)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/auth/sesion
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "idToken": "{{idToken}}"
+  }
+}
+
+assert {
+  res.status: eq 204
+  res.headers.set-cookie: isString
+}
+
+tests {
+  test("la cookie es HttpOnly y SameSite=Lax", function () {
+    const cookie = String(res.headers["set-cookie"]);
+    expect(cookie).to.contain("HttpOnly");
+    expect(cookie).to.contain("SameSite=Lax");
+  });
+}
+
+docs {
+  Cambia el `idToken` por la cookie de sesión. El token debe ser **recién emitido** (menos de 5 minutos desde el inicio de sesión): si responde 401, obtén uno nuevo (ver LEEME.md). Bruno guarda la cookie y la usa en las solicitudes siguientes.
+}

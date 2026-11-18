@@ -148,6 +148,22 @@ paths:
   /api/semestres/{id}/materias:
     parameters:
       - $ref: '#/components/parameters/semestreId'
+    get:
+      tags: [Materias]
+      operationId: listarMaterias
+      summary: Lista las materias del semestre, de la más antigua a la más reciente
+      parameters:
+        - $ref: '#/components/parameters/limite'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Una página de materias con sus notas.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginaDeMaterias' }
+        '400': { $ref: '#/components/responses/PeticionInvalida' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
     post:
       tags: [Materias]
       operationId: crearMateria
@@ -257,15 +273,12 @@ paths:
               properties:
                 idToken: { type: string, minLength: 20, maxLength: 4096 }
       responses:
-        '201':
-          description: Sesión creada.
+        '204':
+          description: Sesión creada. La respuesta no tiene cuerpo; la cookie es lo que se entrega.
           headers:
             Set-Cookie:
-              description: La cookie de sesión.
+              description: 'sesion=…; Path=/; Max-Age=432000; HttpOnly; SameSite=Lax; Secure (en producción).'
               schema: { type: string }
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Usuario' }
         '400': { $ref: '#/components/responses/PeticionInvalida' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/OrigenNoPermitido' }
@@ -286,15 +299,17 @@ paths:
       summary: La persona de la sesión verificada y su rol
       responses:
         '200':
-          description: La persona.
+          description: La persona de la sesión.
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/Usuario'
-                  - type: object
-                    properties:
-                      demo: { type: boolean, description: Verdadero en modo demostración. }
+                type: object
+                required: [usuario, demo]
+                properties:
+                  usuario: { $ref: '#/components/schemas/Usuario' }
+                  demo:
+                    type: boolean
+                    description: Verdadero en modo demostración (sin cuentas reales).
         '401': { $ref: '#/components/responses/NoAutenticado' }
   /api/admin/usuarios/{uid}/semestres:
     get:
@@ -439,6 +454,16 @@ components:
         siguienteCursor:
           type: [string, 'null']
           description: Pásalo como `?cursor=` para pedir la página siguiente; `null` en la última.
+    PaginaDeMaterias:
+      type: object
+      required: [items, siguienteCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Materia' }
+        siguienteCursor:
+          type: [string, 'null']
+          description: Pásalo como `?cursor=`; `null` en la última página.
     EstadoMateria:
       type: string
       enum: [sin-notas, aprobando, en-riesgo, perdida]
@@ -573,7 +598,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     DemasiadasSolicitudes:
-      description: 'Demasiadas escrituras desde la misma IP (60 por minuto; 10 para la sesión).'
+      description: 'Demasiadas escrituras desde la misma IP (60 por minuto; 30 para la sesión).'
       headers:
         Retry-After:
           description: Segundos que hay que esperar.

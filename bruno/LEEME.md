@@ -32,5 +32,17 @@ Con `MODO_DEMO=1` la API no pide token (hay una persona fija): las solicitudes `
 
 ## Orden
 
-Las solicitudes están numeradas y se pueden correr en orden con _Run Collection_: la carpeta de
-semestres crea un semestre, la de materias lo usa y al final se elimina.
+Las carpetas están numeradas y se pueden correr en orden con _Run Collection_:
+
+1. **Cuenta**: quién soy (200) y sin sesión (401).
+2. **Semestres**: crea un semestre (guarda su `id` en `semestreId`) y prueba 200, 400, 401, 403 y 404.
+3. **Materias**: usa ese semestre (guarda `materiaId`), incluida la paginación con cursor.
+4. **Administración**: 403 para un estudiante, 200 solo con `idTokenAdmin`.
+5. **Limpieza**: elimina el semestre.
+6. **Sesión** (**al final, a propósito**): _registro de sesión_ (`POST /api/auth/sesion`: 400, 401, 403 y 204 con
+   la cookie), quién soy con la cookie y cerrar sesión.
+
+Esa última carpeta va al final por dos razones: al crear la cookie, Bruno la envía en todas las
+solicitudes siguientes (las pruebas «sin sesión» dejarían de dar 401) y **cerrar sesión revoca los
+tokens**: el `idToken` que usabas deja de servir. Para repetir la colección, obtén un token nuevo.
+El `idToken` del registro de sesión debe ser **reciente** (menos de 5 minutos desde que inició sesión).

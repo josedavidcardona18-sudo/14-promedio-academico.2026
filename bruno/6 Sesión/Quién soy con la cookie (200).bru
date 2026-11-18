@@ -1,0 +1,20 @@
+meta {
+  name: Quién soy con la cookie (200)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/auth/yo
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.usuario.uid: isString
+}
+
+docs {
+  Sin cabecera Authorization: Bruno envía sola la cookie `sesion` que guardó en «Registro de sesión».
+}

@@ -149,21 +149,22 @@ const usuarioSchema = z.object({
   uid: z.string(),
   correo: z.string().nullable(),
   rol: z.enum(['estudiante', 'admin']),
-  demo: z.boolean(),
 });
-export type UsuarioActual = z.infer<typeof usuarioSchema>;
+const respuestaUsuarioSchema = z.object({ usuario: usuarioSchema, demo: z.boolean() });
+export type UsuarioActual = z.infer<typeof usuarioSchema> & { demo: boolean };
 
-export const pedirUsuario = (signal?: AbortSignal) =>
-  llamar('/api/auth/yo', usuarioSchema, { signal });
+export async function pedirUsuario(signal?: AbortSignal): Promise<UsuarioActual> {
+  const { usuario, demo } = await llamar('/api/auth/yo', respuestaUsuarioSchema, { signal });
+  return { ...usuario, demo };
+}
 
-/** Cambia el `idToken` de Firebase por la cookie de sesión. */
-export async function abrirSesion(idToken: string): Promise<void> {
-  await llamar('/api/auth/sesion', z.unknown(), {
+/** Cambia el `idToken` de Firebase por la cookie de sesión (`204`: la cookie es la respuesta). */
+export const abrirSesion = (idToken: string) =>
+  llamar('/api/auth/sesion', null, {
     metodo: 'POST',
     cuerpo: { idToken },
     mensajeDelServidor: true,
   });
-}
 
 export async function cerrarSesion(): Promise<void> {
   await llamar('/api/auth/sesion', null, { metodo: 'DELETE' });

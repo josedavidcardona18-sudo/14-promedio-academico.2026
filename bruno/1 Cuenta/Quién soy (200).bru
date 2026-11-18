@@ -16,9 +16,10 @@ auth:bearer {
 
 assert {
   res.status: eq 200
-  res.body.rol: isString
+  res.body.usuario.rol: isString
+  res.body.usuario.uid: isString
 }
 
 docs {
-  La persona de la sesión verificada y su rol.
+  La persona de la sesión verificada: `{ usuario: { uid, correo, rol } }`.
 }

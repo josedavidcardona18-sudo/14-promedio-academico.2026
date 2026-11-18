@@ -1,4 +1,4 @@
-import { ErrorHttp, noEncontrado } from '@/lib/errores';
+import { ErrorHttp, noEncontrado, peticionInvalida } from '@/lib/errores';
 import type { PaginaDeSemestres, RepositorioSemestres } from '@/repositories/semestres';
 import {
   LIMITES,
@@ -69,6 +69,30 @@ export async function obtenerMateria(
   const materia = semestre.materias.find((m) => m.id === materiaId);
   if (!materia) throw noEncontrado(MATERIA_NO_ENCONTRADA);
   return materia;
+}
+
+export interface PaginaDeMaterias {
+  items: Materia[];
+  siguienteCursor: string | null;
+}
+
+/** Paginación por cursor sobre las materias del semestre (máximo 30): el cursor es el id de la última. */
+export async function listarMaterias(
+  repositorio: RepositorioSemestres,
+  uid: string,
+  semestreId: string,
+  limite: number,
+  cursor?: string,
+): Promise<PaginaDeMaterias> {
+  const { materias } = await obtenerSemestre(repositorio, uid, semestreId);
+  const desde = cursor === undefined ? 0 : materias.findIndex((m) => m.id === cursor) + 1;
+  if (cursor !== undefined && desde === 0) {
+    throw peticionInvalida([{ campo: 'cursor', mensaje: 'Cursor inválido.' }]);
+  }
+  const items = materias.slice(desde, desde + limite);
+  const ultimo = items.at(-1);
+  const hayMas = desde + limite < materias.length;
+  return { items, siguienteCursor: hayMas && ultimo ? ultimo.id : null };
 }
 
 export async function crearMateria(
