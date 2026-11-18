@@ -27,6 +27,7 @@ export default defineConfig({
         '**/*.test.{ts,tsx}',
         '**/*.d.ts',
         '**/pruebas-de-datos.ts',
+        '**/pruebas-api.ts',
         'src/repositories/index.ts',
       ],
       reporter: ['text', 'html', 'json-summary'],
