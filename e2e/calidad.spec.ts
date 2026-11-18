@@ -207,3 +207,23 @@ test.describe('impresión y sin errores', () => {
     });
   }
 });
+
+test.describe('problemas que Chrome registra aparte de la consola', () => {
+  for (const ruta of RUTAS) {
+    test(`${ruta}: ningún problema de CSP en el panel de problemas (p. ej. eval bloqueado)`, async ({
+      page,
+      context,
+    }) => {
+      const cdp = await context.newCDPSession(page);
+      const problemas: string[] = [];
+      cdp.on('Audits.issueAdded', ({ issue }) => {
+        const csp = issue.details.contentSecurityPolicyIssueDetails;
+        problemas.push(`${issue.code}: ${csp?.contentSecurityPolicyViolationType ?? 'otro'}`);
+      });
+      await cdp.send('Audits.enable');
+      await abrir(page, ruta);
+      await page.waitForTimeout(1500);
+      expect(problemas).toEqual([]);
+    });
+  }
+});

@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+// El CSP de producción no permite `unsafe-eval`. Zod prueba `new Function` para compilar sus
+// esquemas y, aunque capture el error, Chrome lo anota como violación de CSP (kEvalViolation).
+// `jitless` omite ese intento; con objetos tan pequeños la diferencia de velocidad no se nota.
+z.config({ jitless: true });
+
 /** Reglas del documento del proyecto (sección 8): se escriben aquí una sola vez. */
 export const LIMITES = {
   notaMaxima: 5,
