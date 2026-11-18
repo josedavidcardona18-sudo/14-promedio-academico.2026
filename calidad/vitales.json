@@ -1,16 +1,16 @@
 {
   "proyecto": "movil-360",
   "condiciones": "next start local, Chromium, CPU 4× más lenta (CDP), sin estrangulamiento de red",
-  "LCP_ms": 92,
+  "LCP_ms": 140,
   "CLS": 0,
-  "INP_ms": 32,
-  "interacciones_medidas": 31,
+  "INP_ms": 48,
+  "interacciones_medidas": 34,
   "peores_interacciones_ms": [
-    32,
-    32,
-    32,
-    32,
-    32
+    48,
+    48,
+    48,
+    40,
+    40
   ],
   "nota": "Con menos de 50 interacciones, el INP es la peor de todas. Flujo: resumen → editar notas → simulador."
 }

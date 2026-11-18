@@ -10,7 +10,7 @@
     {
       "regla": "color-contrast",
       "ayuda": "Elements must meet minimum color contrast ratio thresholds",
-      "elementos": 8
+      "elementos": 9
     }
   ],
   "detalle_de_violaciones": []
