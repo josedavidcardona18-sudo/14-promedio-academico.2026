@@ -1,0 +1,10 @@
+.cabecera {
+  display: grid;
+  gap: 0.5rem;
+  margin-block-end: 1.5rem;
+}
+
+.intro {
+  color: var(--suave);
+  font-size: 1.0625rem;
+}

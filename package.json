@@ -14,7 +14,7 @@
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run --coverage && node --test \".claude/hooks/*.test.mjs\" \"scripts/*.test.mjs\"",
+    "test": "vitest run --coverage && node --test --test-reporter=spec \".claude/hooks/*.test.mjs\" \"scripts/*.test.mjs\"",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
     "e2e": "playwright test",
     "prepare": "husky"

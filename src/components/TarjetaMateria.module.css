@@ -1,0 +1,12 @@
+.tarjeta {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  min-inline-size: 0;
+}
+
+@media print {
+  .tarjeta {
+    break-inside: avoid;
+  }
+}

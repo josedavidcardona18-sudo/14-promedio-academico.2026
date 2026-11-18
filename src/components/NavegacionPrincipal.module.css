@@ -1,0 +1,30 @@
+.lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.enlace {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  padding-inline: 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--texto);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.enlace:hover {
+  background: var(--superficie-2);
+}
+
+.enlace[aria-current='page'] {
+  color: var(--primario);
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.35em;
+}

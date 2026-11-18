@@ -1,0 +1,25 @@
+.seccion {
+  display: grid;
+  gap: 1rem;
+}
+
+.lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  min-inline-size: 0;
+}
+
+.vacio {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  max-inline-size: var(--medida);
+}

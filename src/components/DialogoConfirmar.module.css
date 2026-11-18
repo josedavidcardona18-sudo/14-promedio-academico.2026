@@ -1,0 +1,22 @@
+.dialogo {
+  inline-size: min(90vw, 28rem);
+  padding: 1.25rem;
+  border: 1px solid var(--borde-control);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+.dialogo[open] {
+  display: grid;
+  gap: 1rem;
+}
+
+.dialogo::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.titulo {
+  font-size: 1.125rem;
+  font-weight: 700;
+}

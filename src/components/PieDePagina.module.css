@@ -1,0 +1,12 @@
+.pie {
+  border-block-start: 1px solid var(--borde);
+  background: var(--superficie);
+  color: var(--suave);
+  font-size: 0.875rem;
+}
+
+.interior {
+  max-inline-size: 72rem;
+  margin-inline: auto;
+  padding: 1rem max(1rem, env(safe-area-inset-right)) 1rem max(1rem, env(safe-area-inset-left));
+}
