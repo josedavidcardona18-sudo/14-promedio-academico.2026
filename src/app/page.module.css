@@ -1,3 +1,9 @@
+/* El pie de página queda siempre bajo el primer pantallazo: así no se mueve cuando, tras leer los
+   datos del navegador, aparece el contenido de la calculadora (evita el salto de diseño, CLS). */
+.pagina {
+  min-block-size: 100dvh;
+}
+
 .cabecera {
   display: grid;
   gap: 0.5rem;

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function Inicio() {
   return (
-    <div className="contenedor">
+    <div className={`contenedor ${estilos.pagina}`}>
       <div className={estilos.cabecera}>
         <h1>Calculadora de promedio académico</h1>
         <p className={`${estilos.intro} texto-legible`}>
