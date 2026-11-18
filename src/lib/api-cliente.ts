@@ -48,3 +48,23 @@ export async function pedirSemestre(
   if (!resultado.success) throw formato;
   return resultado.data;
 }
+
+/** Cambia el `idToken` de Firebase por la cookie de sesión. Devuelve un mensaje si algo falla. */
+export async function abrirSesion(idToken: string): Promise<void> {
+  const respuesta = await fetch('/api/auth/sesion', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken }),
+  }).catch(() => {
+    throw new ErrorDeApi('No hay conexión con el servidor. Revisa tu internet.', null);
+  });
+  if (respuesta.ok) return;
+  const cuerpo: unknown = await respuesta.json().catch(() => null);
+  const mensaje =
+    typeof cuerpo === 'object' && cuerpo !== null && 'error' in cuerpo ? String(cuerpo.error) : '';
+  throw new ErrorDeApi(mensaje || 'No pudimos iniciar la sesión.', respuesta.status);
+}
+
+export async function cerrarSesion(): Promise<void> {
+  await fetch('/api/auth/sesion', { method: 'DELETE' }).catch(() => undefined);
+}

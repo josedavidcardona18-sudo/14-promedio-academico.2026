@@ -1,6 +1,6 @@
 import type { DecodedIdToken } from 'firebase-admin/auth';
 import { modoDemo } from './config';
-import { UID_DEMO } from './constantes';
+import { NOMBRE_COOKIE, UID_DEMO } from './constantes';
 import { ErrorHttp } from './errores';
 import { obtenerAuth } from './firebase-admin';
 
@@ -12,7 +12,7 @@ export interface Usuario {
   rol: Rol;
 }
 
-export const NOMBRE_COOKIE = 'sesion';
+export { NOMBRE_COOKIE };
 /** Entre 5 minutos y 2 semanas (límite de Firebase): unos 5 días. */
 export const DURACION_SESION_MS = 5 * 24 * 60 * 60 * 1000;
 export const USUARIO_DEMO: Usuario = { uid: UID_DEMO, correo: null, rol: 'estudiante' };
@@ -27,7 +27,7 @@ export function leerCookie(peticion: Request, nombre: string): string | null {
 }
 
 /** El rol viene de un *custom claim* asignado con el Admin SDK; si falta, es estudiante. */
-function aUsuario(decodificado: DecodedIdToken): Usuario {
+export function aUsuario(decodificado: DecodedIdToken): Usuario {
   return {
     uid: decodificado.uid,
     correo: decodificado.email ?? null,

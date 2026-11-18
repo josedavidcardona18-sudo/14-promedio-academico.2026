@@ -1,0 +1,14 @@
+.formulario {
+  display: grid;
+  gap: 0.75rem;
+  max-inline-size: 26rem;
+}
+
+.acciones {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.aviso {
+  max-inline-size: 26rem;
+}

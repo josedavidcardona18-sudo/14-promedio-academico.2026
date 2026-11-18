@@ -10,7 +10,8 @@ const politicaDeContenido = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // Firebase Auth (correo y contraseña) solo necesita hablar con estos dos servicios de Google.
+  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
