@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { evaluar } from './guard.mjs';
 
@@ -77,6 +79,10 @@ describe('guard · red y acciones con efecto', () => {
     assert.match(bash('git push origin main --force'), /force/);
     assert.match(bash('git reset --hard HEAD~1'), /reset --hard/);
   });
+  it('12b. bloquea un node -e que nombra .env.local y crear archivos en el home', () => {
+    assert.match(bash("node -e \"require('fs').readFileSync('.env.local','utf8')\""), /secretos/);
+    assert.match(bash('touch ~/archivo-nuevo.txt'), /fuera de la carpeta/);
+  });
   it('13. permite los comandos normales del proyecto', () => {
     assert.equal(bash('npm run check'), null);
     assert.equal(bash('git diff --stat'), null);
@@ -91,31 +97,52 @@ describe('guard · red y acciones con efecto', () => {
 });
 
 describe('guard · como proceso (contrato con Claude Code)', () => {
-  const ejecutar = (entrada) =>
+  const carpetas = [];
+  const proyectoTemporal = () => {
+    const carpeta = mkdtempSync(path.join(tmpdir(), 'guard-'));
+    carpetas.push(carpeta);
+    return carpeta;
+  };
+  const ejecutar = (entrada, proyecto) =>
     spawnSync('node', [GUARD], {
       input: entrada,
       encoding: 'utf8',
-      env: { ...process.env, CLAUDE_PROJECT_DIR: PROYECTO },
+      env: { ...process.env, CLAUDE_PROJECT_DIR: proyecto },
     });
+  const llamada = (proyecto, herramienta, datos) =>
+    JSON.stringify({ tool_name: herramienta, tool_input: datos, cwd: proyecto });
+  after(() => carpetas.forEach((c) => rmSync(c, { recursive: true, force: true })));
 
   it('15. sale con código 2 y escribe el motivo en stderr cuando bloquea', () => {
-    const r = ejecutar(
-      JSON.stringify({ tool_name: 'Read', tool_input: { file_path: '.env.local' }, cwd: PROYECTO }),
-    );
+    const p = proyectoTemporal();
+    const r = ejecutar(llamada(p, 'Read', { file_path: '.env.local' }), p);
     assert.equal(r.status, 2);
     assert.match(r.stderr, /BLOQUEADO/);
   });
   it('16. sale con código 0 cuando permite', () => {
-    const r = ejecutar(
-      JSON.stringify({
-        tool_name: 'Bash',
-        tool_input: { command: 'npm run check' },
-        cwd: PROYECTO,
-      }),
-    );
-    assert.equal(r.status, 0);
+    const p = proyectoTemporal();
+    assert.equal(ejecutar(llamada(p, 'Bash', { command: 'npm run check' }), p).status, 0);
   });
   it('17. si la entrada no es JSON, bloquea (falla cerrado)', () => {
-    assert.equal(ejecutar('esto no es json').status, 2);
+    assert.equal(ejecutar('esto no es json', proyectoTemporal()).status, 2);
+  });
+  it('18. audita cada llamada, permitida o bloqueada, en ia/auditoria.jsonl', () => {
+    const p = proyectoTemporal();
+    ejecutar(llamada(p, 'Bash', { command: 'npm run check' }), p);
+    ejecutar(llamada(p, 'Bash', { command: 'curl https://ejemplo.com' }), p);
+    const lineas = readFileSync(path.join(p, 'ia', 'auditoria.jsonl'), 'utf8')
+      .trim()
+      .split('\n');
+    const [primera, segunda] = lineas.map((l) => JSON.parse(l));
+    assert.equal(lineas.length, 2);
+    assert.deepEqual([primera.decision, primera.resumen], ['permitido', 'npm run check']);
+    assert.deepEqual([segunda.decision, segunda.herramienta], ['bloqueado', 'Bash']);
+    assert.match(segunda.motivo, /curl/);
+    assert.match(primera.momento, /^\d{4}-\d{2}-\d{2}T/);
+  });
+  it('19. si no puede escribir la auditoría, el bloqueo igual se aplica', () => {
+    const p = proyectoTemporal();
+    writeFileSync(path.join(p, 'ia'), 'esto es un archivo, no una carpeta');
+    assert.equal(ejecutar(llamada(p, 'Bash', { command: 'sudo ls' }), p).status, 2);
   });
 });

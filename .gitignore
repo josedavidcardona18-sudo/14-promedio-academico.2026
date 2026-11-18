@@ -21,3 +21,6 @@ test-results/
 .claude/settings.local.json
 .DS_Store
 npm-debug.log*
+
+# registro de auditoría de la IA (local; puede contener comandos)
+ia/auditoria.jsonl

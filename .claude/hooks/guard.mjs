@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Hook PreToolUse: bloquea (exit 2 + mensaje en stderr) lo que AGENTS.md prohíbe.
 // Es una capa más: NO sustituye al sandbox ni a no tener secretos reales en el disco.
-import { readFileSync, realpathSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -92,6 +92,25 @@ export function evaluar(entrada, proyecto) {
   return motivoDeRuta(ruta, cwd, proyecto, HERRAMIENTAS_DE_ESCRITURA.has(herramienta));
 }
 
+/** Registro de auditoría: qué intentó hacer la IA y qué se decidió. Nunca debe estorbar al hook. */
+function registrar(proyecto, entrada, motivo) {
+  try {
+    const datos = entrada.tool_input ?? {};
+    const resumen = String(datos.command ?? datos.file_path ?? datos.path ?? datos.pattern ?? '');
+    mkdirSync(path.join(proyecto, 'ia'), { recursive: true });
+    const linea = {
+      momento: new Date().toISOString(),
+      herramienta: entrada.tool_name,
+      resumen: resumen.slice(0, 200),
+      decision: motivo ? 'bloqueado' : 'permitido',
+      ...(motivo && { motivo }),
+    };
+    appendFileSync(path.join(proyecto, 'ia', 'auditoria.jsonl'), `${JSON.stringify(linea)}\n`);
+  } catch {
+    // Si no se puede escribir, el bloqueo (o el permiso) igual se aplica.
+  }
+}
+
 function bloquear(motivo) {
   process.stderr.write(`BLOQUEADO por .claude/hooks/guard.mjs: ${motivo}.\n`);
   process.exit(2);
@@ -106,6 +125,7 @@ function main() {
   }
   const proyecto = resolver(process.env.CLAUDE_PROJECT_DIR ?? entrada.cwd ?? process.cwd(), '/');
   const motivo = evaluar(entrada, proyecto);
+  registrar(proyecto, entrada, motivo);
   if (motivo) bloquear(motivo);
 }
 
