@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MenuDeCuenta } from './MenuDeCuenta';
 import { NavegacionPrincipal } from './NavegacionPrincipal';
 import estilos from './Encabezado.module.css';
 
@@ -13,6 +14,7 @@ export function Encabezado() {
           Promedio académico
         </Link>
         <NavegacionPrincipal />
+        <MenuDeCuenta />
       </div>
     </header>
   );

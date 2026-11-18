@@ -8,7 +8,15 @@ import ui from './ui.module.css';
 import estilos from './TarjetaResumen.module.css';
 
 /** Presentación pura de una materia en el resumen: no calcula nada, solo muestra lo que recibe. */
-export function TarjetaResumen({ materia, meta }: { materia: ResumenMateria; meta: number }) {
+export function TarjetaResumen({
+  materia,
+  meta,
+  semestreId,
+}: {
+  materia: ResumenMateria;
+  meta: number;
+  semestreId: string;
+}) {
   const idTitulo = useId();
   const { resultado, simulacion, nombre, creditos } = materia;
   const mensaje = mensajeSimulacion(simulacion, meta);
@@ -30,7 +38,7 @@ export function TarjetaResumen({ materia, meta }: { materia: ResumenMateria; met
         <span>{mensaje.texto}</span>
       </p>
       <Link
-        href={`/materias/${materia.id}`}
+        href={`/materias/${materia.id}?semestre=${encodeURIComponent(semestreId)}`}
         className={`${ui.boton} ${estilos.enlace} no-imprimir`}
       >
         Ver y editar notas <span className="solo-lectores">de {nombre}</span>

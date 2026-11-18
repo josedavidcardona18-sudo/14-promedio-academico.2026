@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { ContenedorSimulador } from '@/components/ContenedorSimulador';
+import { Esqueleto } from '@/components/EstadosDeDatos';
 import estilos from '../paginas.module.css';
 
 export const metadata: Metadata = {
@@ -19,7 +21,9 @@ export default function Simulador() {
           falta, o si la meta ya no es alcanzable.
         </p>
       </div>
-      <ContenedorSimulador />
+      <Suspense fallback={<Esqueleto />}>
+        <ContenedorSimulador />
+      </Suspense>
     </div>
   );
 }

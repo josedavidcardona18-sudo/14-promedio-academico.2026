@@ -38,20 +38,3 @@ export function MensajeDeError({
     </div>
   );
 }
-
-/** Vacío: invita a la siguiente acción en vez de dejar la pantalla en blanco. */
-export function MensajeVacio({ onRestablecer }: { onRestablecer: (() => void) | undefined }) {
-  return (
-    <div className={`${ui.tarjeta} ${estilos.mensaje}`}>
-      <h2>Aún no hay materias</h2>
-      <p>Este semestre no tiene materias todavía.</p>
-      {onRestablecer && (
-        <div>
-          <button type="button" className={`${ui.boton} ${ui.primario}`} onClick={onRestablecer}>
-            Restablecer datos de ejemplo
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}

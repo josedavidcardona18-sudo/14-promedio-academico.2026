@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { ContenedorResumen } from '@/components/ContenedorResumen';
+import { Esqueleto } from '@/components/EstadosDeDatos';
 import { DESCRIPCION, TITULO_INICIO } from '../sitio';
 import estilos from '../paginas.module.css';
 
@@ -19,7 +21,9 @@ export default function Inicio() {
           falta para aprobar.
         </p>
       </div>
-      <ContenedorResumen />
+      <Suspense fallback={<Esqueleto />}>
+        <ContenedorResumen />
+      </Suspense>
     </div>
   );
 }

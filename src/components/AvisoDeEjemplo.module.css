@@ -1,6 +1,0 @@
-.aviso {
-  display: grid;
-  gap: 0.75rem;
-  background: var(--info-fondo);
-  color: var(--info-texto);
-}

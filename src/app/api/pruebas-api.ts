@@ -43,11 +43,13 @@ export const moduloRepositorios = {
   },
 };
 
-/** Base nueva por prueba: solo Ana tiene el semestre de ejemplo; Beto empieza vacío. */
-export async function reiniciarEntorno(): Promise<RepositorioSemestres> {
+/** Base nueva por prueba: solo Ana tiene el semestre de ejemplo (`sembrar: null` = nadie). */
+export async function reiniciarEntorno({
+  sembrar = 'ana',
+}: { sembrar?: string | null } = {}): Promise<RepositorioSemestres> {
   reiniciarLimites();
   const almacen = crearAlmacenEnMemoria();
-  await sembrarEjemplo(almacen, 'ana');
+  if (sembrar) await sembrarEjemplo(almacen, sembrar);
   repositorioActual = crearRepositorioSemestres({ almacen });
   return repositorioActual;
 }

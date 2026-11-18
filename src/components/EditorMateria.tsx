@@ -1,62 +1,120 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { erroresPorCampo } from '@/schemas/errores';
-import { materiaEntradaSchema, type Materia, type Nota } from '@/schemas/semestre';
+import { useMemo } from 'react';
+import { useEdicionMateria, type Guardado } from '@/hooks/useEdicionMateria';
+import type { Materia } from '@/schemas/semestre';
 import { calcularMateria, simularNota } from '@/services/promedios';
+import { CampoNumero } from './CampoNumero';
+import { CampoTexto } from './CampoTexto';
 import { ListaDeNotas } from './ListaDeNotas';
 import { ResultadoCalculo } from './ResultadoCalculo';
 import ui from './ui.module.css';
 import estilos from './EditorMateria.module.css';
 
 interface Props {
+  semestreId: string;
   materia: Materia;
   meta: number;
-  guardarMateria: (materia: Materia) => void;
+  guardar: (materia: Materia) => Promise<void>;
 }
 
-type Guardado = 'nada' | 'guardado' | 'pendiente';
+const ESTADOS: Record<Guardado, string> = {
+  limpio: '',
+  guardando: 'Guardando…',
+  guardado: 'Cambios guardados en tu cuenta.',
+  borrador: 'Tienes cambios sin guardar. Quedan como borrador en este navegador.',
+  invalido: 'Hay datos por corregir: no se puede guardar todavía.',
+};
+
+type Edicion = ReturnType<typeof useEdicionMateria>;
+
+function PieDelEditor({ edicion }: { edicion: Edicion }) {
+  return (
+    <>
+      <p className={ui.ayuda} role="status">
+        {ESTADOS[edicion.guardado]}
+      </p>
+      <p role="alert" className={ui.error}>
+        {edicion.fallo}
+      </p>
+      <div className={ui.acciones}>
+        <button
+          type="button"
+          className={ui.boton}
+          disabled={!edicion.cambiado}
+          onClick={edicion.descartar}
+        >
+          Descartar cambios
+        </button>
+        <button
+          type="submit"
+          className={`${ui.boton} ${ui.primario}`}
+          disabled={
+            !edicion.cambiado || !edicion.validacion.success || edicion.guardado === 'guardando'
+          }
+        >
+          Guardar cambios
+        </button>
+      </div>
+    </>
+  );
+}
+
+function DatosDeLaMateria({ edicion }: { edicion: Edicion }) {
+  const { campos, errores } = edicion;
+  return (
+    <>
+      <CampoTexto
+        etiqueta="Nombre de la materia"
+        valor={campos.nombre}
+        onCambio={(nombre) => edicion.editar({ nombre })}
+        error={errores['nombre']}
+        atributos={{ maxLength: 80 }}
+      />
+      <CampoNumero
+        etiqueta="Créditos (1 a 20)"
+        valor={campos.creditos}
+        onCambio={(creditos) => edicion.editar({ creditos })}
+        min={1}
+        max={20}
+        paso={1}
+        error={errores['creditos']}
+      />
+      <ListaDeNotas
+        notas={campos.notas}
+        errores={errores}
+        onCambiar={(notas) => edicion.editar({ notas })}
+      />
+    </>
+  );
+}
 
 /**
  * Formulario controlado con validación cruzada (los porcentajes no pasan de 100 %). Las reglas son
  * las mismas del servidor: el esquema Zod. El resultado es estado derivado (`useMemo`), no guardado.
  */
-export function EditorMateria({ materia, meta, guardarMateria }: Props) {
-  const [notas, setNotas] = useState<Nota[]>(materia.notas);
-  const [guardado, setGuardado] = useState<Guardado>('nada');
-  const entrada = useMemo(
-    () => ({ nombre: materia.nombre, creditos: materia.creditos, notas }),
-    [materia.nombre, materia.creditos, notas],
-  );
-  const validacion = useMemo(() => materiaEntradaSchema.safeParse(entrada), [entrada]);
-  const errores = useMemo(() => erroresPorCampo(validacion.error), [validacion]);
+export function EditorMateria({ semestreId, materia, meta, guardar }: Props) {
+  const edicion = useEdicionMateria(semestreId, materia, guardar);
+  const { campos, validacion } = edicion;
   const calculo = useMemo(
     () =>
       validacion.success
-        ? { resultado: calcularMateria(notas), simulacion: simularNota(notas, meta) }
+        ? { resultado: calcularMateria(campos.notas), simulacion: simularNota(campos.notas, meta) }
         : null,
-    [validacion.success, notas, meta],
+    [validacion.success, campos.notas, meta],
   );
-
-  function cambiar(nuevas: Nota[]) {
-    setNotas(nuevas);
-    const revisada = materiaEntradaSchema.safeParse({ ...entrada, notas: nuevas });
-    if (revisada.success) guardarMateria({ id: materia.id, ...revisada.data });
-    setGuardado(revisada.success ? 'guardado' : 'pendiente');
-  }
 
   return (
     <div className={estilos.editor}>
-      <section
+      <form
         className={`${ui.tarjeta} ${estilos.notas}`}
         aria-label={`Notas de ${materia.nombre}`}
+        onSubmit={edicion.enviar}
+        noValidate
       >
-        <ListaDeNotas notas={notas} errores={errores} onCambiar={cambiar} />
-        <p className={ui.ayuda} role="status">
-          {guardado === 'guardado' && 'Cambios guardados como borrador en este navegador.'}
-          {guardado === 'pendiente' && 'Hay datos por corregir: el borrador no se actualizó.'}
-        </p>
-      </section>
+        <DatosDeLaMateria edicion={edicion} />
+        <PieDelEditor edicion={edicion} />
+      </form>
       {calculo ? (
         <ResultadoCalculo
           resultado={calculo.resultado}

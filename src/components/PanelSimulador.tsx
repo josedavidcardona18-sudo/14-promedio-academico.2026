@@ -1,8 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useId, useMemo, useState } from 'react';
-import type { DatosSemestre } from '@/hooks/useSemestreActual';
-import { metaSchema, type Materia } from '@/schemas/semestre';
+import { metaSchema, type Materia, type SemestreConMaterias } from '@/schemas/semestre';
 import { simularNota } from '@/services/promedios';
 import { CampoNumero } from './CampoNumero';
 import { mensajeSimulacion, type Mensaje } from './textos';
@@ -79,8 +79,7 @@ function calcularMensaje(materia: Materia | undefined, meta: number | null): Men
 }
 
 /** Estado derivado: el mensaje se calcula con `useMemo` a partir de la materia y la meta elegidas. */
-export function PanelSimulador({ datos }: { datos: DatosSemestre }) {
-  const { semestre } = datos;
+export function PanelSimulador({ semestre }: { semestre: SemestreConMaterias }) {
   const [materiaId, setMateriaId] = useState(semestre.materias[0]?.id ?? '');
   const [meta, setMeta] = useState<number | null>(semestre.meta);
   const materia = semestre.materias.find((m) => m.id === materiaId) ?? semestre.materias[0];
@@ -88,12 +87,21 @@ export function PanelSimulador({ datos }: { datos: DatosSemestre }) {
   const metaValida = validacion.success ? validacion.data : null;
   const mensaje = useMemo(() => calcularMensaje(materia, metaValida), [materia, metaValida]);
 
+  if (!materia) {
+    return (
+      <p className={`${ui.tarjeta} texto-legible`}>
+        Este semestre aún no tiene materias.{' '}
+        <Link href={`/?semestre=${semestre.id}`}>Agrega una</Link> para usar el simulador.
+      </p>
+    );
+  }
+
   return (
     <div className={estilos.panel}>
       <form className={`${ui.tarjeta} ${estilos.formulario}`} onSubmit={(e) => e.preventDefault()}>
         <SelectorDeMateria
           materias={semestre.materias}
-          valor={materia?.id ?? ''}
+          valor={materia.id}
           onCambio={setMateriaId}
         />
         <CampoNumero

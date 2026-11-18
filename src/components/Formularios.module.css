@@ -1,0 +1,5 @@
+.formulario {
+  display: grid;
+  gap: 0.75rem;
+  max-inline-size: 28rem;
+}

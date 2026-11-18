@@ -1,14 +1,14 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import type { Materia } from '@/schemas/semestre';
+import type { MateriaEntrada } from '@/schemas/semestre';
 import { borrar, escribir, leer, suscribir } from '@/storage/almacen';
 import { claveDeBorrador, leerBorrador, serializarBorrador } from '@/storage/borrador';
 
 /**
- * Borrador de las materias de un semestre en `localStorage`, mientras no hay sesión.
+ * Borrador de una materia en `localStorage`: lo que se escribió y todavía no se guardó en la cuenta.
  * `useSyncExternalStore`: el HTML del servidor no depende del navegador y se sincroniza entre pestañas.
  */
-export function useBorrador(semestreId: string) {
-  const clave = claveDeBorrador(semestreId);
+export function useBorrador(semestreId: string, materiaId: string) {
+  const clave = claveDeBorrador(semestreId, materiaId);
   const crudo = useSyncExternalStore(
     suscribir,
     () => leer(clave),
@@ -16,7 +16,7 @@ export function useBorrador(semestreId: string) {
   );
   const borrador = useMemo(() => leerBorrador(crudo), [crudo]);
   const guardar = useCallback(
-    (materias: readonly Materia[]) => escribir(clave, serializarBorrador(materias)),
+    (materia: MateriaEntrada) => escribir(clave, serializarBorrador(materia)),
     [clave],
   );
   const descartar = useCallback(() => borrar(clave), [clave]);

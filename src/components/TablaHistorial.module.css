@@ -1,0 +1,52 @@
+.envoltura {
+  overflow-x: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+}
+
+.tabla {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+
+.tabla th,
+.tabla td {
+  padding: 0.625rem 0.75rem;
+  border-block-end: 1px solid var(--borde);
+  text-align: start;
+  vertical-align: top;
+}
+
+.tabla thead th {
+  background: var(--superficie-2);
+  font-weight: 700;
+}
+
+.tabla tbody tr:last-child th,
+.tabla tbody tr:last-child td {
+  border-block-end: 0;
+}
+
+.numero {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cambio {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cambio[data-tendencia='sube'] {
+  color: var(--exito-texto);
+}
+
+.cambio[data-tendencia='baja'] {
+  color: var(--peligro-texto);
+}
+
+.sinDato {
+  color: var(--suave);
+}

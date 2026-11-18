@@ -1,0 +1,15 @@
+.comparador {
+  display: grid;
+  gap: 1rem;
+}
+
+.selectores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.75rem;
+}
+
+.resultado {
+  font-size: 1.125rem;
+  font-weight: 600;
+}

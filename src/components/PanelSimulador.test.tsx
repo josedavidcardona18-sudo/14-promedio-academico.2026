@@ -1,15 +1,26 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContenedorMateria } from './ContenedorMateria';
 import { ContenedorSimulador } from './ContenedorSimulador';
-import { responderConSemestre } from './pruebas-de-datos';
+import { instalarServidorFalso, navegacion, reiniciarNavegacion } from './pruebas-de-datos';
 
-afterEach(() => vi.unstubAllGlobals());
+vi.mock('next/navigation', async () => (await import('./pruebas-de-datos')).moduloNavegacionFalso);
+vi.mock(
+  '@/lib/firebase-admin',
+  async () => (await import('@/app/api/pruebas-api')).moduloFirebaseFalso,
+);
+vi.mock('@/repositories', async () => (await import('@/app/api/pruebas-api')).moduloRepositorios);
+
+beforeEach(() => reiniciarNavegacion('/simulador', 'semestre=ejemplo'));
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 async function abrirSimulador() {
   const user = userEvent.setup();
-  responderConSemestre();
+  await instalarServidorFalso();
   render(<ContenedorSimulador />);
   await screen.findByLabelText('Materia');
   return user;
@@ -60,22 +71,92 @@ describe('PanelSimulador · ¿qué nota necesito?', () => {
     expect(resumen.closest('details')).toHaveAttribute('open');
     expect(screen.getByText(/décimas/)).toBeInTheDocument();
   });
+
+  it('un semestre sin materias lo explica y lleva a agregarlas', async () => {
+    await instalarServidorFalso({ sembrar: null });
+    const { POST } = await import('@/app/api/semestres/route');
+    const creado = await POST(
+      new Request('http://localhost/api/semestres', {
+        method: 'POST',
+        headers: { origin: 'http://localhost', 'content-type': 'application/json' },
+        body: JSON.stringify({ nombre: 'Vacío', meta: 3 }),
+      }),
+      {},
+    );
+    reiniciarNavegacion('/simulador', `semestre=${(await creado.json()).id}`);
+    render(<ContenedorSimulador />);
+    expect(await screen.findByText(/aún no tiene materias/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Agrega una' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/\?semestre=/),
+    );
+  });
 });
 
 describe('ContenedorMateria', () => {
-  it('muestra el editor de la materia pedida', async () => {
-    responderConSemestre();
+  it('muestra el editor de la materia pedida y enlaza de vuelta al resumen del semestre', async () => {
+    await instalarServidorFalso();
+    reiniciarNavegacion('/materias/ingles-ii', 'semestre=ejemplo');
     render(<ContenedorMateria materiaId="ingles-ii" />);
     expect(await screen.findByRole('heading', { name: /Inglés II/ })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Nota 3' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Volver al resumen de 2026-2/ })).toHaveAttribute(
+      'href',
+      '/?semestre=ejemplo',
+    );
   });
 
   it('una materia que no existe lo dice y ofrece volver al resumen', async () => {
-    responderConSemestre();
+    await instalarServidorFalso();
+    reiniciarNavegacion('/materias/no-existe', 'semestre=ejemplo');
     render(<ContenedorMateria materiaId="no-existe" />);
     expect(
       await screen.findByRole('heading', { name: 'No encontramos esa materia' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver al resumen' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Volver al resumen' })).toHaveAttribute(
+      'href',
+      '/?semestre=ejemplo',
+    );
+  });
+
+  it('guarda los cambios en la cuenta: al volver a abrir la materia, siguen ahí', async () => {
+    const user = userEvent.setup();
+    await instalarServidorFalso();
+    reiniciarNavegacion('/materias/calculo-diferencial', 'semestre=ejemplo');
+    const { unmount } = render(<ContenedorMateria materiaId="calculo-diferencial" />);
+    await screen.findByRole('heading', { name: /Cálculo diferencial/ });
+    const tercera = within(screen.getByRole('group', { name: 'Nota 3' })).getByLabelText(
+      'Nota (0,0 a 5,0)',
+    );
+    await user.type(tercera, '4.5');
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await screen.findByText('Cambios guardados en tu cuenta.');
+    unmount();
+
+    render(<ContenedorMateria materiaId="calculo-diferencial" />);
+    await screen.findByRole('heading', { name: /Cálculo diferencial/ });
+    const recargada = within(screen.getByRole('group', { name: 'Nota 3' })).getByLabelText(
+      'Nota (0,0 a 5,0)',
+    );
+    expect(recargada).toHaveValue(4.5);
+  });
+
+  it('eliminar la materia pide confirmación y, al confirmar, vuelve al resumen', async () => {
+    const user = userEvent.setup();
+    await instalarServidorFalso();
+    reiniciarNavegacion('/materias/ingles-ii', 'semestre=ejemplo');
+    render(<ContenedorMateria materiaId="ingles-ii" />);
+    await screen.findByRole('heading', { name: /Inglés II/ });
+
+    await user.click(screen.getByRole('button', { name: 'Eliminar materia' }));
+    const dialogo = screen.getByRole('dialog', { name: '¿Eliminar Inglés II?' });
+    await user.click(within(dialogo).getByRole('button', { name: 'Sí, eliminar' }));
+
+    expect(navegacion.replace).toHaveBeenCalledWith('/?semestre=ejemplo');
+    const { GET } = await import('@/app/api/semestres/[id]/materias/[materiaId]/route');
+    const r = await GET(new Request('http://localhost/api/semestres/ejemplo/materias/ingles-ii'), {
+      params: Promise.resolve({ id: 'ejemplo', materiaId: 'ingles-ii' }),
+    });
+    expect(r.status).toBe(404);
   });
 });

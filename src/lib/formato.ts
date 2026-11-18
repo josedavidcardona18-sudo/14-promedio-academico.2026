@@ -15,3 +15,8 @@ export function formatearNota(valor: number): string {
 export function formatearPorcentaje(valor: number): string {
   return `${PORCENTAJE.format(valor)} %`;
 }
+
+/** 25 → «0,25» · −50 → «0,50» (valor absoluto en centésimas; el signo lo dice la palabra). */
+export function formatearCentesimas(centesimas: number): string {
+  return NOTA.format(Math.abs(centesimas) / 100);
+}

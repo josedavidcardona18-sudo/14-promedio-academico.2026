@@ -1,19 +1,39 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { SEMESTRE_DE_EJEMPLO } from '@/repositories/ejemplo';
+import type { Materia } from '@/schemas/semestre';
+import { claveDeBorrador } from '@/storage/borrador';
 import { EditorMateria } from './EditorMateria';
 
-function primeraMateria() {
+function primeraMateria(): Materia {
   const materia = SEMESTRE_DE_EJEMPLO.materias[0];
   if (!materia) throw new Error('falta la materia de ejemplo');
   return materia;
 }
 
-function preparar() {
+const original = primeraMateria();
+
+/** Hace de «cuenta»: al guardar, la materia guardada cambia (como cuando la API refresca la lista). */
+function Envoltura({ guardar }: { guardar: (m: Materia) => Promise<void> }) {
+  const [guardada, setGuardada] = useState<Materia>(original);
+  return (
+    <EditorMateria
+      semestreId="ejemplo"
+      materia={guardada}
+      meta={3}
+      guardar={async (m) => {
+        await guardar(m);
+        setGuardada(m);
+      }}
+    />
+  );
+}
+
+function preparar(guardar: (m: Materia) => Promise<void> = vi.fn().mockResolvedValue(undefined)) {
   const user = userEvent.setup();
-  const guardar = vi.fn();
-  render(<EditorMateria materia={primeraMateria()} meta={3} guardarMateria={guardar} />);
+  render(<Envoltura guardar={guardar} />);
   return { user, guardar };
 }
 
@@ -21,6 +41,7 @@ const nota = (n: number) => screen.getByRole('group', { name: `Nota ${n}` });
 const valorDe = (n: number) => within(nota(n)).getByLabelText('Nota (0,0 a 5,0)');
 const porcentajeDe = (n: number) => within(nota(n)).getByLabelText('Porcentaje (%)');
 const resultado = () => within(screen.getByRole('region', { name: 'Resultado' }));
+const guardarCambios = () => screen.getByRole('button', { name: 'Guardar cambios' });
 
 describe('EditorMateria · resultados que se actualizan al escribir', () => {
   it('muestra el resultado inicial: promedio, acumulado y lo que se necesita', () => {
@@ -40,17 +61,6 @@ describe('EditorMateria · resultados que se actualizan al escribir', () => {
     expect(resultado().getByText('Aprobada')).toBeInTheDocument();
   });
 
-  it('guarda el borrador solo cuando los datos son válidos', async () => {
-    const { user, guardar } = preparar();
-    await user.type(valorDe(3), '4');
-    expect(guardar).toHaveBeenLastCalledWith(
-      expect.objectContaining({ id: 'calculo-diferencial', notas: expect.any(Array) }),
-    );
-    expect(
-      screen.getByText('Cambios guardados como borrador en este navegador.'),
-    ).toBeInTheDocument();
-  });
-
   it('agrega y quita notas', async () => {
     const { user } = preparar();
     await user.click(screen.getByRole('button', { name: 'Agregar nota' }));
@@ -60,8 +70,90 @@ describe('EditorMateria · resultados que se actualizan al escribir', () => {
   });
 });
 
+describe('EditorMateria · guardado explícito y borrador', () => {
+  it('sin cambios no hay nada que guardar ni descartar', () => {
+    preparar();
+    expect(guardarCambios()).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Descartar cambios' })).toBeDisabled();
+  });
+
+  it('escribir deja un borrador en este navegador, pero NO envía nada a la cuenta', async () => {
+    const { user, guardar } = preparar();
+    await user.type(valorDe(3), '4');
+    expect(guardar).not.toHaveBeenCalled();
+    expect(screen.getByText(/Tienes cambios sin guardar/)).toBeInTheDocument();
+    expect(window.localStorage.getItem(claveDeBorrador('ejemplo', original.id))).toContain(
+      '"valor":4',
+    );
+  });
+
+  it('«Guardar cambios» envía la materia completa y borra el borrador', async () => {
+    const { user, guardar } = preparar();
+    await user.type(valorDe(3), '4');
+    await user.click(guardarCambios());
+
+    await waitFor(() =>
+      expect(screen.getByText('Cambios guardados en tu cuenta.')).toBeInTheDocument(),
+    );
+    expect(guardar).toHaveBeenCalledWith({
+      id: original.id,
+      nombre: 'Cálculo diferencial',
+      creditos: 4,
+      notas: [
+        { nombre: 'Primer corte', valor: 3.5, porcentaje: 30 },
+        { nombre: 'Segundo corte', valor: 2.8, porcentaje: 30 },
+        { nombre: 'Tercer corte', valor: 4, porcentaje: 40 },
+      ],
+    });
+    expect(window.localStorage.getItem(claveDeBorrador('ejemplo', original.id))).toBeNull();
+    expect(guardarCambios()).toBeDisabled();
+  });
+
+  it('si el servidor rechaza el guardado muestra el motivo y conserva lo escrito', async () => {
+    const { user } = preparar(
+      vi.fn().mockRejectedValue(new Error('Tu sesión venció. Inicia sesión de nuevo.')),
+    );
+    await user.type(valorDe(3), '4');
+    await user.click(guardarCambios());
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tu sesión venció');
+    expect(valorDe(3)).toHaveValue(4);
+    expect(guardarCambios()).toBeEnabled();
+  });
+
+  it('«Descartar cambios» vuelve a lo guardado y borra el borrador', async () => {
+    const { user } = preparar();
+    await user.type(valorDe(3), '4');
+    await user.click(screen.getByRole('button', { name: 'Descartar cambios' }));
+    expect(valorDe(3)).toHaveValue(null);
+    expect(window.localStorage.getItem(claveDeBorrador('ejemplo', original.id))).toBeNull();
+  });
+
+  it('al volver a abrir la materia recupera el borrador que no se guardó', async () => {
+    const { user } = preparar();
+    await user.type(valorDe(3), '4');
+    document.body.innerHTML = '';
+    preparar();
+    expect(valorDe(3)).toHaveValue(4);
+    expect(screen.getByText(/Tienes cambios sin guardar/)).toBeInTheDocument();
+  });
+
+  it('se puede cambiar el nombre y los créditos de la materia', async () => {
+    const { user, guardar } = preparar();
+    await user.clear(screen.getByLabelText('Nombre de la materia'));
+    await user.type(screen.getByLabelText('Nombre de la materia'), 'Cálculo I');
+    await user.clear(screen.getByLabelText('Créditos (1 a 20)'));
+    await user.type(screen.getByLabelText('Créditos (1 a 20)'), '5');
+    await user.click(guardarCambios());
+    await waitFor(() =>
+      expect(guardar).toHaveBeenCalledWith(
+        expect.objectContaining({ nombre: 'Cálculo I', creditos: 5 }),
+      ),
+    );
+  });
+});
+
 describe('EditorMateria · validación (esquema Zod compartido con el servidor)', () => {
-  it('una nota de 5,5 se rechaza con su mensaje y no se calcula (criterio del documento)', async () => {
+  it('una nota de 5,5 se rechaza con su mensaje, no se calcula y no se puede guardar (criterio del documento)', async () => {
     const { user, guardar } = preparar();
     await user.type(valorDe(3), '5.5');
 
@@ -69,14 +161,11 @@ describe('EditorMateria · validación (esquema Zod compartido con el servidor)'
     expect(valorDe(3)).toHaveAccessibleDescription(/La nota no puede pasar de 5,0\./);
     expect(screen.getByText(/Corrige los datos marcados/)).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Resultado' })).not.toBeInTheDocument();
-    expect(guardar).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        notas: expect.arrayContaining([expect.objectContaining({ valor: 5.5 })]),
-      }),
-    );
     expect(
-      screen.getByText('Hay datos por corregir: el borrador no se actualizó.'),
+      screen.getByText('Hay datos por corregir: no se puede guardar todavía.'),
     ).toBeInTheDocument();
+    expect(guardarCambios()).toBeDisabled();
+    expect(guardar).not.toHaveBeenCalled();
   });
 
   it('porcentajes que suman 110 % se rechazan y el error se explica una sola vez (criterio 2)', async () => {
@@ -104,6 +193,19 @@ describe('EditorMateria · validación (esquema Zod compartido con el servidor)'
     await user.type(campo, '4');
     expect(campo.checkValidity()).toBe(true);
     expect(campo.validationMessage).toBe('');
+  });
+
+  it('un nombre de materia vacío y créditos en 0 se señalan junto a su campo', async () => {
+    const { user } = preparar();
+    await user.clear(screen.getByLabelText('Nombre de la materia'));
+    await user.clear(screen.getByLabelText('Créditos (1 a 20)'));
+    await user.type(screen.getByLabelText('Créditos (1 a 20)'), '0');
+    expect(screen.getByLabelText('Nombre de la materia')).toHaveAccessibleDescription(
+      /Escribe el nombre de la materia/,
+    );
+    expect(screen.getByLabelText('Créditos (1 a 20)')).toHaveAccessibleDescription(
+      /Mínimo 1 crédito/,
+    );
   });
 
   it('un nombre vacío en una nota se señala junto a su campo', async () => {
