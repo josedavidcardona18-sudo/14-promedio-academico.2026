@@ -23,6 +23,18 @@ describe('manejar', () => {
     expect(publica.headers.get('cache-control')).toContain('s-maxage');
   });
 
+  it('una respuesta pública con error NUNCA se cachea (una CDN no debe guardar un 404 ni un 400)', async () => {
+    const GET = manejar(
+      async () => {
+        throw noEncontrado('x');
+      },
+      { publica: true },
+    );
+    const r = await GET(pedir(), contexto);
+    expect(r.status).toBe(404);
+    expect(r.headers.get('cache-control')).toBe('no-store');
+  });
+
   it('un error conocido se convierte en su código con el cuerpo {error}', async () => {
     const GET = manejar(async () => {
       throw noEncontrado('Semestre no encontrado.');

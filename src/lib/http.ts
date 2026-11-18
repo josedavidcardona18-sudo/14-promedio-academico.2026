@@ -60,7 +60,9 @@ export function manejar<Contexto>(
     }
     respuesta.headers.set(
       'Cache-Control',
-      publica ? 'public, s-maxage=60, stale-while-revalidate=300' : 'no-store',
+      publica && respuesta.status < 400
+        ? 'public, s-maxage=60, stale-while-revalidate=300'
+        : 'no-store',
     );
     respuesta.headers.set('X-Request-Id', id);
     registrar({
